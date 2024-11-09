@@ -1,4 +1,4 @@
 # Lens Storage Node Client Libs
 
-Currently supported:
-- Typescript
+Supported languages:
+- TypeScript: [Example](https://github.com/lens-network/lens-storage-client-libs/blob/main/typescript/demo.ts)
