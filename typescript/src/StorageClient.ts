@@ -17,6 +17,8 @@ import {
   createAclEntry,
   createMultipartFormDataStream,
   extractLinkHash,
+  LENS_SCHEME,
+  lensUri,
   type NameFilePair,
   never,
 } from "./utils";
@@ -65,7 +67,7 @@ export class StorageClient {
 
     return {
       linkHash,
-      uri: `lens://${linkHash}`,
+      uri: lensUri(linkHash),
     };
   }
 
@@ -171,32 +173,31 @@ export class StorageClient {
     return entries;
   }
 
-  private async update(
-    linkHash: string,
-    authorization: Authorization,
-    entries: NameFilePair[],
-  ): Promise<Response> {
-    const { boundary, stream } = createMultipartFormDataStream(entries);
-
-    return fetch(`${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": `multipart/form-data; boundary=${boundary}`,
-      },
-      body: stream,
-      // @ts-ignore
-      duplex: "half", // Required for streaming request body in some browsers
-    });
-  }
 
   private async create(
     linkHash: string,
     entries: NameFilePair[],
   ): Promise<Response> {
+    return this.multipartRequest('POST', `${this.env.backend}/${linkHash}`, entries);
+  }
+
+  private async update(
+    linkHash: string,
+    authorization: Authorization,
+    entries: NameFilePair[],
+  ): Promise<Response> {
+    return this.multipartRequest('PUT', `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`, entries);
+  }
+
+  private async multipartRequest(
+    method: "POST" | "PUT",
+    url: string,
+    entries: NameFilePair[]
+  ): Promise<Response> {
     const { boundary, stream } = createMultipartFormDataStream(entries);
 
-    return fetch(`${this.env.backend}/${linkHash}`, {
-      method: "POST",
+    return fetch(url, {
+      method,
       headers: {
         "Content-Type": `multipart/form-data; boundary=${boundary}`,
       },

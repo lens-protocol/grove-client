@@ -115,6 +115,13 @@ export function extractLinkHash(linkHashOrUri: string): string {
 /**
  * @internal
  */
+export function lensUri(linkHash: string): string {
+  return `${LENS_SCHEME}://${linkHash}`;
+}
+
+/**
+ * @internal
+ */
 export function createAclEntry(template: AclTemplate): NameFilePair {
   const name = 'lens-acl.json';
   const content = createAclTemplateContent(template);
