@@ -1,15 +1,31 @@
+import {
+  type Authorization,
+  AuthorizationService,
+} from "./AuthorizationService";
 import type { EnvironmentConfig } from "./environments";
+import { StorageClientError } from "./errors";
 import type {
+  AccessOptions,
+  EditFileOptions,
   Resource,
   Signer,
   UploadFileOptions,
   UploadFolderOptions,
   UploadFolderResponse,
 } from "./types";
-import { createMultipartFormDataStream, extractLinkHash, never } from "./utils";
+import {
+  createMultipartFormDataStream,
+  extractLinkHash,
+  type NameFilePair,
+  never,
+} from "./utils";
 
 export class StorageClient {
-  private constructor(private readonly env: EnvironmentConfig) { }
+  private readonly authorization: AuthorizationService;
+
+  private constructor(private readonly env: EnvironmentConfig) {
+    this.authorization = new AuthorizationService(env);
+  }
 
   /**
    * Creates a new instance of the `Storage` client.
@@ -24,39 +40,26 @@ export class StorageClient {
   /**
    * Uploads a file to the storage.
    *
+   * @throws {@link StorageClientError} if uploading the file fails
    * @param _file - The file to upload
-   * @param _signer - The signer to use for the upload
    * @param _options - Any additional options for the upload
    * @returns The {@link Resource} to the uploaded file
    */
   async uploadFile(
     file: File,
-    _signer: Signer,
-    _options?: UploadFileOptions,
+    options: UploadFileOptions = {},
   ): Promise<Resource> {
     const linkHash = await this.requestLinkHash();
 
-    const { boundary, stream } = createMultipartFormDataStream([
-      {
-        name: linkHash,
-        file,
-      },
-    ]);
+    const entries = await this.includeAclTemplate(
+      [{ name: linkHash, file }],
+      options,
+    );
 
-    const response = await fetch(`${this.env.backend}/${linkHash}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": `multipart/form-data; boundary=${boundary}`,
-      },
-      body: stream,
-
-      // @ts-ignore
-      duplex: "half", // Required for streaming request body in some browsers
-    });
+    const response = await this.create(linkHash, entries);
 
     if (!response.ok) {
-      console.log(response);
-      throw new Error("Failed to upload file");
+      throw await StorageClientError.fromResponse(response);
     }
 
     return {
@@ -68,15 +71,14 @@ export class StorageClient {
   /**
    * Uploads a folder to the storage.
    *
+   * @throws {@link StorageClientError} if uploading the folder fails
    * @param _files - The files to upload
-   * @param _signer - The signer to use for the upload
    * @param _options - Any additional options for the upload
    * @returns The {@link UploadFolderResponse} to the uploaded folder
    */
   async uploadFolder(
     _files: FileList | File[],
-    _signer: Signer,
-    _options?: UploadFolderOptions,
+    _options: UploadFolderOptions = {},
   ): Promise<UploadFolderResponse> {
     never("Not implemented");
   }
@@ -96,27 +98,60 @@ export class StorageClient {
   /**
    * Deletes a resource from the storage.
    *
-   * @param _linkHashOrUri - The `lens://…` URI or link hash
-   * @param _signer - The signer to use for the deletion
+   * @throws {@link AuthorizationError} if not authorized to delete the resource
+   * @param linkHashOrUri - The `lens://…` URI or link hash
+   * @param signer - The signer to use for the deletion
    * @returns Whether the deletion was successful or not
    */
-  async delete(_linkHashOrUri: string, _signer: Signer): Promise<boolean> {
-    never("Not implemented");
+  async delete(linkHashOrUri: string, signer: Signer): Promise<boolean> {
+    const linkHash = extractLinkHash(linkHashOrUri);
+
+    const authorization = await this.authorization.authorize(
+      { linkHash, action: "delete" },
+      signer,
+    );
+
+    const response = await fetch(
+      `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    return response.ok;
   }
 
   /**
    * Edits a file in the storage.
    *
-   * @param _linkHashOrUri - The `lens://…` URI or link hash
-   * @param _file - The file to replace the existing file with
-   * @param _signer - The signer to use for the edit
+   *
+   * @throws {@link StorageClientError} if editing the file fails
+   * @throws {@link AuthorizationError} if not authorized to edit the file
+   * @param linkHashOrUri - The `lens://…` URI or link hash
+   * @param file - The file to replace the existing file with
+   * @param signer - The signer to use for the edit
+   * @param options - Any additional options for the edit
    */
   async editFile(
-    _linkHashOrUri: string,
-    _file: File,
-    _signer: Signer,
+    linkHashOrUri: string,
+    file: File,
+    signer: Signer,
+    options: EditFileOptions = {},
   ): Promise<boolean> {
-    never("Not implemented");
+    const linkHash = extractLinkHash(linkHashOrUri);
+    const authorization = await this.authorization.authorize(
+      { linkHash, action: "edit" },
+      signer,
+    );
+
+    const entries = await this.includeAclTemplate(
+      [{ name: linkHash, file }],
+      options,
+    );
+
+    const response = await this.update(linkHash, authorization, entries);
+
+    return response.ok;
   }
 
   private async requestLinkHash(): Promise<string> {
@@ -125,11 +160,52 @@ export class StorageClient {
     });
 
     if (!response.ok) {
-      console.log(response);
-      throw new Error("Failed to request a new link hash");
+      throw await StorageClientError.fromResponse(response);
     }
 
     const data = await response.json();
     return data[0].link_hash;
+  }
+
+  private async includeAclTemplate(
+    entries: NameFilePair[],
+    options: AccessOptions,
+  ): Promise<NameFilePair[]> {
+    return entries;
+  }
+
+  private async update(
+    linkHash: string,
+    authorization: Authorization,
+    entries: NameFilePair[],
+  ): Promise<Response> {
+    const { boundary, stream } = createMultipartFormDataStream(entries);
+
+    return fetch(`${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": `multipart/form-data; boundary=${boundary}`,
+      },
+      body: stream,
+      // @ts-ignore
+      duplex: "half", // Required for streaming request body in some browsers
+    });
+  }
+
+  private async create(
+    linkHash: string,
+    entries: NameFilePair[],
+  ): Promise<Response> {
+    const { boundary, stream } = createMultipartFormDataStream(entries);
+
+    return fetch(`${this.env.backend}/${linkHash}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": `multipart/form-data; boundary=${boundary}`,
+      },
+      body: stream,
+      // @ts-ignore
+      duplex: "half", // Required for streaming request body in some browsers
+    });
   }
 }

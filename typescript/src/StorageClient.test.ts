@@ -15,8 +15,8 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
   const client = StorageClient.create(staging);
 
   describe("When testing single file uploads", () => {
-    it("Then it should create an immutable resource", async () => {
-      const resource = await client.uploadFile(file1, signer);
+    it("Then it should create the expected resource", async () => {
+      const resource = await client.uploadFile(file1);
 
       const response = await fetch(client.resolve(resource.uri), {
         method: "HEAD",
@@ -25,31 +25,19 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       expect(response.status).toBe(200);
       expect(resource).toBeDefined();
     });
-
-    it.skip("Then it should allow to define a Lens Account ACL on the resource", async () => {
-      const resource = await client.uploadFile(file1, signer, {
-        acl: {
-          template: "lens_account",
-          lensAccount: "0x1234567890123456789012345678901234567890",
-        },
-      });
-
-      // This could be tricky to assert until we can have a Lens Account owned by env.PRIVATE_KEY
-      expect(() => client.delete(resource.uri, signer)).rejects.not.toThrow();
-    });
   });
 
   describe("When testing folder uploads", () => {
     const files = [file1, file2];
 
     it("Then it should create an immutable folder", async () => {
-      const resource = await client.uploadFolder(files, signer);
+      const resource = await client.uploadFolder(files);
 
       expect(resource).toBeDefined();
     });
 
     it("Then should allow to enable directory listing", async () => {
-      const resource = await client.uploadFolder(files, signer, {
+      const resource = await client.uploadFolder(files, {
         index: true,
       });
 
@@ -66,12 +54,41 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const index = new File([JSON.stringify(content)], "index.json", {
         type: "application/json",
       });
-      const resource = await client.uploadFolder(files, signer, { index });
+      const resource = await client.uploadFolder(files, { index });
 
       const url = client.resolve(resource.folder.uri);
       const response = await fetch(url);
       const json = await response.json();
       expect(json).toMatchObject(content);
+    });
+  });
+
+  describe('When testing file editing', () => {
+    it("Then it should deletion according to the specified ACL", async () => {
+      const resource = await client.uploadFile(file1, {
+        acl: {
+          template: "lens_account",
+          lensAccount: "0x1234567890123456789012345678901234567890",
+        },
+      });
+
+      // This could be tricky to assert until we can have a Lens Account owned by env.PRIVATE_KEY
+      await expect(client.editFile(resource.uri, file2, signer)).resolves.toBe(true);
+    });
+
+  });
+
+  describe("When testing file deletion", () => {
+    it("Then it should deletion according to the specified ACL", async () => {
+      const resource = await client.uploadFile(file1, {
+        acl: {
+          template: "lens_account",
+          lensAccount: "0x1234567890123456789012345678901234567890",
+        },
+      });
+
+      // This could be tricky to assert until we can have a Lens Account owned by env.PRIVATE_KEY
+      await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
     });
   });
 });
