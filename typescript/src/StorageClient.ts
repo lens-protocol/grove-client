@@ -140,7 +140,6 @@ export class StorageClient {
   /**
    * Edits a file in the storage.
    *
-   *
    * @throws {@link StorageClientError} if editing the file fails
    * @throws {@link AuthorizationError} if not authorized to edit the file
    * @param linkHashOrUri - The `lens://…` URI or link hash
