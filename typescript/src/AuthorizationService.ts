@@ -2,13 +2,6 @@ import type { EnvironmentConfig } from "./environments";
 import { AuthorizationError } from "./errors";
 import type { Signer } from "./types";
 
-
-
-export type AuthorizationRequest = {
-  linkHash: string;
-  action: "delete" | "edit";
-}
-
 export type Authorization = {
   challengeId: string;
   secret: string
@@ -30,8 +23,8 @@ type SignedChallengeResponse = {
 export class AuthorizationService {
   constructor(private readonly env: EnvironmentConfig) { }
 
-  async authorize(request: AuthorizationRequest, signer: Signer): Promise<Authorization> {
-    const challenge = await this.requestChallenge(request);
+  async authorize(action: "delete" | "edit", linkHash: string, signer: Signer): Promise<Authorization> {
+    const challenge = await this.requestChallenge(action, linkHash);
 
     const signature = await signer.signMessage({
       message: challenge.secret_random,
@@ -49,7 +42,7 @@ export class AuthorizationService {
   }
 
   private async requestChallenge(
-    request: AuthorizationRequest,
+    action: "delete" | "edit", linkHash: string
   ): Promise<Challenge> {
     const response = await fetch(`${this.env.backend}/challenge/new`, {
       method: "POST",
@@ -57,8 +50,8 @@ export class AuthorizationService {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        link_hash: request.linkHash,
-        action: request.action
+        link_hash: linkHash,
+        action: action
       })
     });
 

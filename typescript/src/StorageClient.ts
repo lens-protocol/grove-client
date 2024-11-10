@@ -106,11 +106,7 @@ export class StorageClient {
    */
   async delete(linkHashOrUri: string, signer: Signer): Promise<boolean> {
     const linkHash = extractLinkHash(linkHashOrUri);
-
-    const authorization = await this.authorization.authorize(
-      { linkHash, action: "delete" },
-      signer,
-    );
+    const authorization = await this.authorization.authorize('delete', linkHash, signer);
 
     const response = await fetch(
       `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
@@ -140,10 +136,7 @@ export class StorageClient {
     options: EditFileOptions = {},
   ): Promise<boolean> {
     const linkHash = extractLinkHash(linkHashOrUri);
-    const authorization = await this.authorization.authorize(
-      { linkHash, action: "edit" },
-      signer,
-    );
+    const authorization = await this.authorization.authorize('edit', linkHash, signer);
 
     const entries = await this.includeAclTemplate(
       [{ name: linkHash, file }],
