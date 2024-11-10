@@ -1,4 +1,4 @@
 export * from "./environments";
-export * from "./Storage";
+export * from "./StorageClient";
 export * from "./types";
 export * from "./utils";

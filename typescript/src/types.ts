@@ -2,7 +2,7 @@ export type EvmAddress = `0x${string}`;
 
 export type LensAccountAclTemplate = {
 	template: "lens_account";
-	lens_account: EvmAddress;
+	lensAccount: EvmAddress;
 };
 
 export type GenericAclTemplate = {

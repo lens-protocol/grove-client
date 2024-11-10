@@ -23,19 +23,19 @@ npm install @lens-protocol/storage-node-client
 yarn add @lens-protocol/storage-node-client
 ```
 
-Create an instance of the `Storage` class:
+Create an instance of the `StorageClient`:
 
 ```ts
-import { Storage, testnet } from "@lens-protocol/storage-node-client";
+import { StorageClient, testnet } from "@lens-protocol/storage-node-client";
 
-const storage = Storage.create(testnet);
+const storageClient = StorageClient.create(testnet);
 ```
 
 Assuming you have a signer instance that satisfies the `Signer` interface.
 
 ```ts
 interface Signer {
-  signMessage({ message }): Promise<string>;
+   signMessage({ message }): Promise<string>;
 }
 ```
 
@@ -44,7 +44,7 @@ interface Signer {
 Upload a file:
 
 ```ts
-const { uri, linkHash } = await storage.uploadFile(file:File, walletClient);
+const { uri, linkHash } = await storageClient.uploadFile(file:File, walletClient);
 
 console.log(uri); // lens://bafybeigdyrzt5sfp7udm7hu76u…
 ```
@@ -52,13 +52,13 @@ console.log(uri); // lens://bafybeigdyrzt5sfp7udm7hu76u…
 Upload a mutable file:
 
 ```ts
-const { uri, linkHash } = await storage.uploadFile(file:File, walletClient, { mutable: true });
+const { uri, linkHash } = await storageClient.uploadFile(file:File, walletClient, { mutable: true });
 ```
 
 Use the `lens_account` ACL template:
 
 ```ts
-const { uri, linkHash } = await storage.uploadFile(file:File, walletClient, {
+const { uri, linkHash } = await storageClient.uploadFile(file:File, walletClient, {
    acl: {
       template: 'lens_account',
       lensAccount: '0x1234567890abcdef1234567890abcdef12345678'
@@ -71,7 +71,7 @@ Use the `generic_acl` ACL template:
 ```ts
 const file: File = ...
 
-const { uri, linkHash } = await storage.uploadFile(file, walletClient, {
+const { uri, linkHash } = await storageClient.uploadFile(file, walletClient, {
    acl: {
       template: 'generic_acl',
       contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
@@ -91,7 +91,7 @@ const files: FileList = ...
 const {
    files,   // [ { uri, linkHash } ],
    folder   // { uri, linkHash }
-} = await storage.uploadFolder(files, walletClient);
+} = await storageClient.uploadFolder(files, walletClient);
 
 console.log(folder.uri); // lens://bafybeigdyrzt5sfp7udm7hu76u…
 console.log(files[0].uri); // lens://bafybeiganother…
@@ -100,7 +100,7 @@ console.log(files[0].uri); // lens://bafybeiganother…
 Delete a file or folder:
 
 ```ts
-const success = await storage.delete(
+const success = await storageClient.delete(
   "lens://bafybeigdyrzt5sfp7udm7hu76u…",
   walletClient
 );
@@ -113,7 +113,7 @@ Edit a file:
 ```ts
 const file: File = ...
 
-const success = await storage.editFile('lens://bafybeigdyrzt5sfp7udm7hu76u…', file, walletClient);
+const success = await storageClient.editFile('lens://bafybeigdyrzt5sfp7udm7hu76u…', file, walletClient);
 
 console.log(success); // true
 ```
@@ -153,6 +153,20 @@ Clone the repository:
 git clone https://github.com/lens-network/lens-storage-node-client-libs.git
 cd lens-storage-node-client-libs/typescript
 ```
+
+Create `.env` file from the `.env.example` template:
+
+```bash
+cp .env.example .env
+```
+
+and populate the `PRIVATE_KEY` environment variable:
+
+```bash filename=".env"
+PRIVATE_KEY=0x…
+```
+
+with the private key of a Lens Account owner (needed by Lens Account ACL tests).
 
 Install the dependencies:
 
