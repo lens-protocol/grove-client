@@ -32,14 +32,20 @@ export type AccessOptions = {
 
 export type UploadFileOptions = AccessOptions;
 
+/**
+ * A factory function that, given the list of {@link Resource}s, creates an index file.
+ */
+export type CreateIndexFile = (urls: Resource[]) => File;
+
 export type UploadFolderOptions = AccessOptions & {
   /**
    * Whether accession the resource URI should serve an folder indexing response.
-   * - If a `File` is provided, the file content will be used as the folder indexing response.
-   * - If `true`, it will server the default JSON response.
+   * - If a {@link CreateIndexFile} function is provided, it will be called with the list of files in the folder. The returned file will be used as the directory index file.
+   * - If a `File` is provided, the file content will be used as the directory index file.
+   * - If `true`, it will server the default directory indexing response.
    * - If `false`, it will server the folder's manifest file.
   */
-  index?: File | boolean;
+  index?: CreateIndexFile | File | boolean;
 };
 
 export type EditFileOptions = AccessOptions;
@@ -54,11 +60,6 @@ export type Resource = {
    * The link hash of the resource.
    */
   linkHash: string;
-
-  /**
-   * The CID of the resource.
-   */
-  cid?: string;
 };
 
 export type UploadFolderResponse = {

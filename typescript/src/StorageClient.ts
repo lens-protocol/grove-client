@@ -5,7 +5,6 @@ import {
 import type { EnvironmentConfig } from "./environments";
 import { StorageClientError } from "./errors";
 import type {
-  AccessOptions,
   EditFileOptions,
   Resource,
   Signer,
@@ -14,12 +13,13 @@ import type {
   UploadFolderResponse,
 } from "./types";
 import {
-  createAclEntry,
-  createMultipartFormDataStream,
+  createMultipartStream,
+  FileEntriesBuilder,
   extractLinkHash,
-  lensUri,
-  type NameFilePair,
+  invariant,
+  type MultipartEntry,
   never,
+  resourceFrom,
 } from "./utils";
 
 export class StorageClient {
@@ -43,20 +43,23 @@ export class StorageClient {
    * Uploads a file to the storage.
    *
    * @throws {@link StorageClientError} if uploading the file fails
-   * @param _file - The file to upload
-   * @param _options - Any additional options for the upload
+   * @param file - The file to upload
+   * @param options - Any additional options for the upload
    * @returns The {@link Resource} to the uploaded file
    */
   async uploadFile(
     file: File,
     options: UploadFileOptions = {},
   ): Promise<Resource> {
-    const linkHash = await this.requestLinkHash();
+    const [linkHash] = await this.requestLinkHashes();
 
-    const entries = await this.includeAclTemplate(
-      [{ name: linkHash, file }],
-      options,
-    );
+    const builder = FileEntriesBuilder.from([{ name: linkHash, file }])
+
+    if (options.acl) {
+      builder.withAclTemplate(options.acl);
+    }
+
+    const entries = builder.build();
 
     const response = await this.create(linkHash, entries);
 
@@ -64,25 +67,51 @@ export class StorageClient {
       throw await StorageClientError.fromResponse(response);
     }
 
-    return {
-      linkHash,
-      uri: lensUri(linkHash),
-    };
+    return resourceFrom(linkHash);
   }
 
   /**
    * Uploads a folder to the storage.
    *
    * @throws {@link StorageClientError} if uploading the folder fails
-   * @param _files - The files to upload
-   * @param _options - Any additional options for the upload
+   * @param files - The files to upload
+   * @param options - Any additional options for the upload
    * @returns The {@link UploadFolderResponse} to the uploaded folder
    */
   async uploadFolder(
-    _files: FileList | File[],
-    _options: UploadFolderOptions = {},
+    files: FileList | File[],
+    options: UploadFolderOptions = {},
   ): Promise<UploadFolderResponse> {
-    never("Not implemented");
+    const needsIndex = 'index' in options && !!options.index;
+    const [folderHash, ...fileHashes] = await this.requestLinkHashes(files.length + (needsIndex ? 2 : 1));
+
+    const initialEntries = Array.from(files).map((file, index) => ({
+      name: fileHashes[index] ?? never('No link hash'),
+      file,
+    }));
+
+
+    const builder = FileEntriesBuilder.from(initialEntries)
+
+    if (options.index) {
+      builder.withIndexFile(options.index, fileHashes);
+    }
+
+    if (options.acl) {
+      builder.withAclTemplate(options.acl)
+    }
+
+    const entries = builder.build()
+    const response = await this.create(folderHash, entries);
+
+    if (!response.ok) {
+      throw await StorageClientError.fromResponse(response);
+    }
+
+    return {
+      folder: resourceFrom(folderHash),
+      files: fileHashes.map(resourceFrom),
+    }
   }
 
   /**
@@ -139,18 +168,21 @@ export class StorageClient {
     const linkHash = extractLinkHash(linkHashOrUri);
     const authorization = await this.authorization.authorize('edit', linkHash, signer);
 
-    const entries = await this.includeAclTemplate(
-      [{ name: linkHash, file }],
-      options,
-    );
+    const builder = FileEntriesBuilder.from([{ name: linkHash, file }])
 
+    if (options.acl) {
+      builder.withAclTemplate(options.acl);
+    }
+
+    const entries = builder.build();
     const response = await this.update(linkHash, authorization, entries);
 
     return response.ok;
   }
 
-  private async requestLinkHash(): Promise<string> {
-    const response = await fetch(`${this.env.backend}/link/new`, {
+  private async requestLinkHashes(amount = 1): Promise<[string, ...string[]]> {
+    invariant(amount > 0, "Amount must be greater than 0");
+    const response = await fetch(`${this.env.backend}/link/new?amount=${amount}`, {
       method: "POST",
     });
 
@@ -159,23 +191,13 @@ export class StorageClient {
     }
 
     const data = await response.json();
-    return data[0].link_hash;
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    return data.map((entry: any) => entry.link_hash);
   }
-
-  private async includeAclTemplate(
-    entries: NameFilePair[],
-    options: AccessOptions,
-  ): Promise<NameFilePair[]> {
-    if (options.acl) {
-      entries.push(createAclEntry(options.acl));
-    }
-    return entries;
-  }
-
 
   private async create(
     linkHash: string,
-    entries: NameFilePair[],
+    entries: readonly MultipartEntry[],
   ): Promise<Response> {
     return this.multipartRequest('POST', `${this.env.backend}/${linkHash}`, entries);
   }
@@ -183,7 +205,7 @@ export class StorageClient {
   private async update(
     linkHash: string,
     authorization: Authorization,
-    entries: NameFilePair[],
+    entries: readonly MultipartEntry[],
   ): Promise<Response> {
     return this.multipartRequest('PUT', `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`, entries);
   }
@@ -191,9 +213,9 @@ export class StorageClient {
   private async multipartRequest(
     method: "POST" | "PUT",
     url: string,
-    entries: NameFilePair[]
+    entries: readonly MultipartEntry[]
   ): Promise<Response> {
-    const { boundary, stream } = createMultipartFormDataStream(entries);
+    const { boundary, stream } = createMultipartStream(entries);
 
     return fetch(url, {
       method,

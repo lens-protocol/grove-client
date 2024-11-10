@@ -1,5 +1,5 @@
 import { InvariantError } from "./errors";
-import type { AclTemplate } from "./types";
+import type { AclTemplate, CreateIndexFile, Resource } from "./types";
 
 /**
  * Asserts that the given condition is truthy
@@ -27,7 +27,7 @@ export function never(message = "Unexpected call to never()"): never {
 /**
  * @internal
  */
-export type NameFilePair = {
+export type MultipartEntry = {
   name: string;
   file: File;
 };
@@ -40,8 +40,8 @@ export type MultipartFormDataStream = {
   stream: ReadableStream<Uint8Array>;
 };
 
-async function* fileListToMultipartStream(
-  entries: NameFilePair[],
+async function* multipartStream(
+  entries: readonly MultipartEntry[],
   boundary: string,
 ) {
   for (const { name, file } of entries) {
@@ -64,24 +64,21 @@ async function* fileListToMultipartStream(
 }
 
 /**
- * Creates a multipart/form-data stream from a list of files.
+ * Creates a multipart/form-data stream from a list of entries.
  *
  * @internal
  * @param entries - The list of files to create the stream from
  * @returns The multipart/form-data stream and the boundary string
  */
-export function createMultipartFormDataStream(
-  entries: NameFilePair[],
+export function createMultipartStream(
+  entries: readonly MultipartEntry[],
 ): MultipartFormDataStream {
   const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
 
   return {
     stream: new ReadableStream({
       async start(controller) {
-        for await (const chunk of fileListToMultipartStream(
-          entries,
-          boundary,
-        )) {
+        for await (const chunk of multipartStream(entries, boundary)) {
           if (typeof chunk === "string") {
             controller.enqueue(new TextEncoder().encode(chunk));
           } else {
@@ -122,7 +119,17 @@ export function lensUri(linkHash: string): string {
 /**
  * @internal
  */
-export function createAclEntry(template: AclTemplate): NameFilePair {
+export function resourceFrom(linkHash: string): Resource {
+  return {
+    linkHash,
+    uri: lensUri(linkHash),
+  }
+}
+
+/**
+ * @internal
+ */
+export function createAclEntry(template: AclTemplate): MultipartEntry {
   const name = 'lens-acl.json';
   const content = createAclTemplateContent(template);
 
@@ -151,5 +158,28 @@ function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
 
     default:
       never(`Unknown ACL template: ${acl}`);
+  }
+}
+
+/**
+ * @internal
+ */
+export class FileEntriesBuilder {
+  private constructor(private readonly entries: readonly MultipartEntry[]) { }
+
+  static from(initial: readonly MultipartEntry[]): FileEntriesBuilder {
+    return new FileEntriesBuilder(initial);
+  }
+
+  withAclTemplate(template: AclTemplate) {
+    return new FileEntriesBuilder(this.entries.concat(createAclEntry(template)));
+  }
+
+  withIndexFile(_index: CreateIndexFile | File | boolean, _hashes: readonly string[]): this {
+    return this;
+  }
+
+  build(): ReadonlyArray<MultipartEntry> {
+    return this.entries;
   }
 }
