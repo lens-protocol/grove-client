@@ -14,6 +14,7 @@ import type {
   UploadFolderResponse,
 } from "./types";
 import {
+  createAclEntry,
   createMultipartFormDataStream,
   extractLinkHash,
   type NameFilePair,
@@ -171,6 +172,9 @@ export class StorageClient {
     entries: NameFilePair[],
     options: AccessOptions,
   ): Promise<NameFilePair[]> {
+    if (options.acl) {
+      entries.push(createAclEntry(options.acl));
+    }
     return entries;
   }
 

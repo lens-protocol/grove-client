@@ -1,9 +1,5 @@
-/**
- * An error that occurs when a task violates a logical condition that is assumed to be true at all times.
- */
-export class InvariantError extends Error {
-  name = "InvariantError" as const;
-}
+import { InvariantError } from "./errors";
+import type { AclTemplate } from "./types";
 
 /**
  * Asserts that the given condition is truthy
@@ -28,6 +24,9 @@ export function never(message = "Unexpected call to never()"): never {
   throw new InvariantError(message);
 }
 
+/**
+ * @internal
+ */
 export type NameFilePair = {
   name: string;
   file: File;
@@ -103,9 +102,47 @@ export const LENS_SCHEME = "lens";
 
 const LENS_URI_SUFFIX = `${LENS_SCHEME}://`;
 
+/**
+ * @internal
+ */
 export function extractLinkHash(linkHashOrUri: string): string {
   if (linkHashOrUri.startsWith(LENS_URI_SUFFIX)) {
     return linkHashOrUri.slice(LENS_URI_SUFFIX.length);
   }
   return linkHashOrUri;
+}
+
+/**
+ * @internal
+ */
+export function createAclEntry(template: AclTemplate): NameFilePair {
+  const name = 'lens-acl.json';
+  const content = createAclTemplateContent(template);
+
+  return {
+    name,
+    file: new File([JSON.stringify(content)], name, { type: "application/json" }),
+  }
+}
+
+function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
+  switch (acl.template) {
+    case 'generic_acl':
+      return {
+        template: acl.template,
+        contract_address: acl.contractAddress,
+        chain_id: acl.chainId,
+        network_type: acl.networkType,
+        function_sig: acl.functionSig,
+        params: acl.params,
+      }
+    case 'lens_account':
+      return {
+        template: acl.template,
+        lens_account: acl.lensAccount,
+      };
+
+    default:
+      never(`Unknown ACL template: ${acl}`);
+  }
 }
