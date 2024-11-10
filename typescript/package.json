@@ -1,23 +1,49 @@
 {
-  "dependencies": {
-    "axios": "^1.7.7",
-    "dotenv": "^16.4.5",
-    "ether.js": "^1.0.0",
-    "ethers": "^6.13.4",
-    "form-data": "^4.0.1",
-    "fs": "^0.0.1-security",
-    "path": "^0.12.7"
-  },
-  "name": "lens-storage-client",
+  "name": "@lens-protocol/storage-node-client",
   "version": "0.0.1",
-  "description": "TypeScript client library to interact with Lens Storage Nodes",
-  "main": "index.ts",
-  "devDependencies": {
-    "@types/node": "^22.9.0"
+  "description": "The easiest way to store data on Lens Storage Nodes.",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "import": [
+        "./dist/index.d.ts"
+      ],
+      "require": [
+        "./dist/index.d.cts"
+      ]
+    }
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsup",
+    "clean": "rimraf dist",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "test": "vitest"
   },
-  "author": "crebsy",
-  "license": "MIT"
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.9.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "viem": "^2.21.44",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  },
+  "repository": {
+    "directory": "typescript",
+    "type": "git",
+    "url": "git://github.com/lens-protocol/lens-storage-node-client-libs.git"
+  },
+  "license": "MIT",
+  "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
 }
