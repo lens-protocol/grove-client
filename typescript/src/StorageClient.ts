@@ -6,7 +6,7 @@ import type {
   UploadFolderOptions,
   UploadFolderResponse,
 } from "./types";
-import { never } from "./utils";
+import { createMultipartFormDataStream, extractLinkHash, never } from "./utils";
 
 export class StorageClient {
   private constructor(private readonly env: EnvironmentConfig) { }
@@ -30,12 +30,39 @@ export class StorageClient {
    * @returns The {@link Resource} to the uploaded file
    */
   async uploadFile(
-    _file: File,
+    file: File,
     _signer: Signer,
     _options?: UploadFileOptions,
   ): Promise<Resource> {
-    console.log(this.env); // makes linter happy for now that it's not implemented
-    never("Not implemented");
+    const linkHash = await this.requestLinkHash();
+
+    const { boundary, stream } = createMultipartFormDataStream([
+      {
+        name: linkHash,
+        file,
+      },
+    ]);
+
+    const response = await fetch(`${this.env.backend}/${linkHash}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": `multipart/form-data; boundary=${boundary}`,
+      },
+      body: stream,
+
+      // @ts-ignore
+      duplex: "half", // Required for streaming request body in some browsers
+    });
+
+    if (!response.ok) {
+      console.log(response);
+      throw new Error("Failed to upload file");
+    }
+
+    return {
+      linkHash,
+      uri: `lens://${linkHash}`,
+    };
   }
 
   /**
@@ -57,11 +84,13 @@ export class StorageClient {
   /**
    * Given an URI or link hash, resolves it to a URL.
    *
-   * @param _linkHashOrUri - The `lens://…` URI or link hash
+   * @param linkHashOrUri - The `lens://…` URI or link hash
    * @returns The URL to the resource
    */
-  resolve(_linkHashOrUri: string): string {
-    never("Not implemented");
+  resolve(linkHashOrUri: string): string {
+    const linkHash = extractLinkHash(linkHashOrUri);
+
+    return `${this.env.backend}/${linkHash}`;
   }
 
   /**
@@ -88,5 +117,19 @@ export class StorageClient {
     _signer: Signer,
   ): Promise<boolean> {
     never("Not implemented");
+  }
+
+  private async requestLinkHash(): Promise<string> {
+    const response = await fetch(`${this.env.backend}/link/new`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      console.log(response);
+      throw new Error("Failed to request a new link hash");
+    }
+
+    const data = await response.json();
+    return data[0].link_hash;
   }
 }

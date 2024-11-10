@@ -23,15 +23,9 @@ export interface Signer {
 
 export type UploadFileOptions = {
 	/**
-	 * Whether the resource is mutable or not.
-	 *
-	 * @defaultValue false
-	 */
-	mutable?: boolean;
-	/**
 	 * The ACL template to use for the resource.
 	 *
-	 * @defaultValue no ACL will be applied on the resource
+	 * @defaultValue if not provided the resource will be immutable
 	 */
 	acl?: AclTemplate;
 };
@@ -66,4 +60,11 @@ export type Resource = {
 export type UploadFolderResponse = {
 	files: Resource[];
 	folder: Resource;
+};
+
+/**
+ * @internal
+ */
+export type LinkHash = {
+	link_hash: string;
 };

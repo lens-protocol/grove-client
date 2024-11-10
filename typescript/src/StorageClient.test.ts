@@ -18,15 +18,12 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it("Then it should create an immutable resource", async () => {
       const resource = await client.uploadFile(file1, signer);
 
-      expect(resource).toBeDefined();
-    });
-
-    it("Then it should support mutable files", async () => {
-      const resource = await client.uploadFile(file1, signer, {
-        mutable: true,
+      const response = await fetch(client.resolve(resource.uri), {
+        method: "HEAD",
       });
 
-      expect(() => client.delete(resource.uri, signer)).rejects.not.toThrow();
+      expect(response.status).toBe(200);
+      expect(resource).toBeDefined();
     });
 
     it.skip("Then it should allow to define a Lens Account ACL on the resource", async () => {
@@ -49,16 +46,6 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const resource = await client.uploadFolder(files, signer);
 
       expect(resource).toBeDefined();
-    });
-
-    it("Then it should support mutable folders", async () => {
-      const resource = await client.uploadFolder(files, signer, {
-        mutable: true,
-      });
-
-      expect(() =>
-        client.delete(resource.folder.uri, signer),
-      ).rejects.not.toThrow();
     });
 
     it("Then should allow to enable directory listing", async () => {
