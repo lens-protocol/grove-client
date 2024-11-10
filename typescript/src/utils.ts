@@ -1,5 +1,5 @@
-import { InvariantError } from "./errors";
-import type { AclTemplate, CreateIndexFile, Resource } from "./types";
+import { InvariantError } from './errors';
+import type { AclTemplate, CreateIndexContent, Resource } from './types';
 
 /**
  * Asserts that the given condition is truthy
@@ -8,10 +8,7 @@ import type { AclTemplate, CreateIndexFile, Resource } from "./types";
  * @param condition - Either truthy or falsy value
  * @param message - An error message
  */
-export function invariant(
-  condition: unknown,
-  message: string,
-): asserts condition {
+export function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) {
     throw new InvariantError(message);
   }
@@ -20,7 +17,7 @@ export function invariant(
 /**
  * @internal
  */
-export function never(message = "Unexpected call to never()"): never {
+export function never(message = 'Unexpected call to never()'): never {
   throw new InvariantError(message);
 }
 
@@ -40,10 +37,7 @@ export type MultipartFormDataStream = {
   stream: ReadableStream<Uint8Array>;
 };
 
-async function* multipartStream(
-  entries: readonly MultipartEntry[],
-  boundary: string,
-) {
+async function* multipartStream(entries: readonly MultipartEntry[], boundary: string) {
   for (const { name, file } of entries) {
     yield `--${boundary}\r\n`;
 
@@ -57,7 +51,7 @@ async function* multipartStream(
       yield value;
     }
 
-    yield "\r\n";
+    yield '\r\n';
   }
 
   yield `--${boundary}--\r\n`;
@@ -70,16 +64,14 @@ async function* multipartStream(
  * @param entries - The list of files to create the stream from
  * @returns The multipart/form-data stream and the boundary string
  */
-export function createMultipartStream(
-  entries: readonly MultipartEntry[],
-): MultipartFormDataStream {
+export function createMultipartStream(entries: readonly MultipartEntry[]): MultipartFormDataStream {
   const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
 
   return {
     stream: new ReadableStream({
       async start(controller) {
         for await (const chunk of multipartStream(entries, boundary)) {
-          if (typeof chunk === "string") {
+          if (typeof chunk === 'string') {
             controller.enqueue(new TextEncoder().encode(chunk));
           } else {
             controller.enqueue(chunk); // Enqueue Uint8Array chunks directly
@@ -95,7 +87,7 @@ export function createMultipartStream(
 /**
  * The Lens URI scheme.
  */
-export const LENS_SCHEME = "lens";
+export const LENS_SCHEME = 'lens';
 
 const LENS_URI_SUFFIX = `${LENS_SCHEME}://`;
 
@@ -112,31 +104,11 @@ export function extractLinkHash(linkHashOrUri: string): string {
 /**
  * @internal
  */
-export function lensUri(linkHash: string): string {
-  return `${LENS_SCHEME}://${linkHash}`;
-}
-
-/**
- * @internal
- */
 export function resourceFrom(linkHash: string): Resource {
   return {
     linkHash,
-    uri: lensUri(linkHash),
-  }
-}
-
-/**
- * @internal
- */
-export function createAclEntry(template: AclTemplate): MultipartEntry {
-  const name = 'lens-acl.json';
-  const content = createAclTemplateContent(template);
-
-  return {
-    name,
-    file: new File([JSON.stringify(content)], name, { type: "application/json" }),
-  }
+    uri: `${LENS_SCHEME}://${linkHash}`,
+  };
 }
 
 function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
@@ -149,7 +121,7 @@ function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
         network_type: acl.networkType,
         function_sig: acl.functionSig,
         params: acl.params,
-      }
+      };
     case 'lens_account':
       return {
         template: acl.template,
@@ -161,22 +133,76 @@ function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
   }
 }
 
+function createAclEntry(template: AclTemplate): MultipartEntry {
+  const name = 'lens-acl.json';
+  const content = createAclTemplateContent(template);
+
+  return {
+    name,
+    file: new File([JSON.stringify(content)], name, {
+      type: 'application/json',
+    }),
+  };
+}
+
+function createDefaultIndexContent(fileHashes: readonly string[]): Record<string, unknown> {
+  return {
+    files: fileHashes,
+  };
+}
+
+function createIndexFile(content: unknown): File {
+  return new File([JSON.stringify(content)], 'index.json', {
+    type: 'application/json',
+  });
+}
+
 /**
  * @internal
  */
-export class FileEntriesBuilder {
-  private constructor(private readonly entries: readonly MultipartEntry[]) { }
+export class MultipartEntriesBuilder {
+  private idx = 0;
+  private entries: MultipartEntry[] = [];
 
-  static from(initial: readonly MultipartEntry[]): FileEntriesBuilder {
-    return new FileEntriesBuilder(initial);
+  private constructor(private readonly fileHashes: readonly string[]) {}
+
+  static from(fileHashes: readonly string[]): MultipartEntriesBuilder {
+    return new MultipartEntriesBuilder(fileHashes);
   }
 
-  withAclTemplate(template: AclTemplate) {
-    return new FileEntriesBuilder(this.entries.concat(createAclEntry(template)));
-  }
-
-  withIndexFile(_index: CreateIndexFile | File | boolean, _hashes: readonly string[]): this {
+  withFile(file: File): MultipartEntriesBuilder {
+    this.entries.push({
+      name: this.fileHashes[this.idx++] ?? never('Unexpected file, no hash available'),
+      file,
+    });
     return this;
+  }
+
+  withFiles(files: readonly File[]): MultipartEntriesBuilder {
+    for (const file of files) {
+      this.withFile(file);
+    }
+    return this;
+  }
+
+  withAclTemplate(template: AclTemplate): MultipartEntriesBuilder {
+    this.entries.push(createAclEntry(template));
+    return this;
+  }
+
+  withIndexFile(index: CreateIndexContent | File | true): MultipartEntriesBuilder {
+    const file =
+      index instanceof File
+        ? index
+        : createIndexFile(
+            index === true
+              ? createDefaultIndexContent(this.fileHashes)
+              : index.call(null, this.fileHashes.map(resourceFrom)),
+          );
+
+    invariant(file.name === 'index.json', "Index file must be named 'index.json'");
+
+    return this.withFile(file);
   }
 
   build(): ReadonlyArray<MultipartEntry> {

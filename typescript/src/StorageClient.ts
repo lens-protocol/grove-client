@@ -1,9 +1,6 @@
-import {
-  type Authorization,
-  AuthorizationService,
-} from "./AuthorizationService";
-import type { EnvironmentConfig } from "./environments";
-import { StorageClientError } from "./errors";
+import { type Authorization, AuthorizationService } from './AuthorizationService';
+import type { EnvironmentConfig } from './environments';
+import { StorageClientError } from './errors';
 import type {
   EditFileOptions,
   Resource,
@@ -11,16 +8,15 @@ import type {
   UploadFileOptions,
   UploadFolderOptions,
   UploadFolderResponse,
-} from "./types";
+} from './types';
 import {
+  MultipartEntriesBuilder,
+  type MultipartEntry,
   createMultipartStream,
-  FileEntriesBuilder,
   extractLinkHash,
   invariant,
-  type MultipartEntry,
-  never,
   resourceFrom,
-} from "./utils";
+} from './utils';
 
 export class StorageClient {
   private readonly authorization: AuthorizationService;
@@ -47,13 +43,10 @@ export class StorageClient {
    * @param options - Any additional options for the upload
    * @returns The {@link Resource} to the uploaded file
    */
-  async uploadFile(
-    file: File,
-    options: UploadFileOptions = {},
-  ): Promise<Resource> {
+  async uploadFile(file: File, options: UploadFileOptions = {}): Promise<Resource> {
     const [linkHash] = await this.requestLinkHashes();
 
-    const builder = FileEntriesBuilder.from([{ name: linkHash, file }])
+    const builder = MultipartEntriesBuilder.from([linkHash]).withFile(file);
 
     if (options.acl) {
       builder.withAclTemplate(options.acl);
@@ -83,25 +76,21 @@ export class StorageClient {
     options: UploadFolderOptions = {},
   ): Promise<UploadFolderResponse> {
     const needsIndex = 'index' in options && !!options.index;
-    const [folderHash, ...fileHashes] = await this.requestLinkHashes(files.length + (needsIndex ? 2 : 1));
+    const [folderHash, ...fileHashes] = await this.requestLinkHashes(
+      files.length + (needsIndex ? 2 : 1),
+    );
 
-    const initialEntries = Array.from(files).map((file, index) => ({
-      name: fileHashes[index] ?? never('No link hash'),
-      file,
-    }));
-
-
-    const builder = FileEntriesBuilder.from(initialEntries)
+    const builder = MultipartEntriesBuilder.from(fileHashes).withFiles(Array.from(files));
 
     if (options.index) {
-      builder.withIndexFile(options.index, fileHashes);
+      builder.withIndexFile(options.index);
     }
 
     if (options.acl) {
-      builder.withAclTemplate(options.acl)
+      builder.withAclTemplate(options.acl);
     }
 
-    const entries = builder.build()
+    const entries = builder.build();
     const response = await this.create(folderHash, entries);
 
     if (!response.ok) {
@@ -111,7 +100,7 @@ export class StorageClient {
     return {
       folder: resourceFrom(folderHash),
       files: fileHashes.map(resourceFrom),
-    }
+    };
   }
 
   /**
@@ -141,7 +130,7 @@ export class StorageClient {
     const response = await fetch(
       `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
       {
-        method: "DELETE",
+        method: 'DELETE',
       },
     );
 
@@ -168,7 +157,7 @@ export class StorageClient {
     const linkHash = extractLinkHash(linkHashOrUri);
     const authorization = await this.authorization.authorize('edit', linkHash, signer);
 
-    const builder = FileEntriesBuilder.from([{ name: linkHash, file }])
+    const builder = MultipartEntriesBuilder.from([linkHash]).withFile(file);
 
     if (options.acl) {
       builder.withAclTemplate(options.acl);
@@ -181,9 +170,9 @@ export class StorageClient {
   }
 
   private async requestLinkHashes(amount = 1): Promise<[string, ...string[]]> {
-    invariant(amount > 0, "Amount must be greater than 0");
+    invariant(amount > 0, 'Amount must be greater than 0');
     const response = await fetch(`${this.env.backend}/link/new?amount=${amount}`, {
-      method: "POST",
+      method: 'POST',
     });
 
     if (!response.ok) {
@@ -195,10 +184,7 @@ export class StorageClient {
     return data.map((entry: any) => entry.link_hash);
   }
 
-  private async create(
-    linkHash: string,
-    entries: readonly MultipartEntry[],
-  ): Promise<Response> {
+  private async create(linkHash: string, entries: readonly MultipartEntry[]): Promise<Response> {
     return this.multipartRequest('POST', `${this.env.backend}/${linkHash}`, entries);
   }
 
@@ -207,24 +193,28 @@ export class StorageClient {
     authorization: Authorization,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    return this.multipartRequest('PUT', `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`, entries);
+    return this.multipartRequest(
+      'PUT',
+      `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
+      entries,
+    );
   }
 
   private async multipartRequest(
-    method: "POST" | "PUT",
+    method: 'POST' | 'PUT',
     url: string,
-    entries: readonly MultipartEntry[]
+    entries: readonly MultipartEntry[],
   ): Promise<Response> {
     const { boundary, stream } = createMultipartStream(entries);
 
     return fetch(url, {
       method,
       headers: {
-        "Content-Type": `multipart/form-data; boundary=${boundary}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
       },
       body: stream,
       // @ts-ignore
-      duplex: "half", // Required for streaming request body in some browsers
+      duplex: 'half', // Required for streaming request body in some browsers
     });
   }
 }

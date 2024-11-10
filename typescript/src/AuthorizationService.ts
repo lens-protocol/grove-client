@@ -1,11 +1,11 @@
-import type { EnvironmentConfig } from "./environments";
-import { AuthorizationError } from "./errors";
-import type { Signer } from "./types";
+import type { EnvironmentConfig } from './environments';
+import { AuthorizationError } from './errors';
+import type { Signer } from './types';
 
 export type Authorization = {
   challengeId: string;
-  secret: string
-}
+  secret: string;
+};
 
 type Challenge = {
   message: string;
@@ -18,12 +18,16 @@ type SignedChallenge = Challenge & {
 
 type SignedChallengeResponse = {
   challenge_cid: string;
-}
+};
 
 export class AuthorizationService {
-  constructor(private readonly env: EnvironmentConfig) { }
+  constructor(private readonly env: EnvironmentConfig) {}
 
-  async authorize(action: "delete" | "edit", linkHash: string, signer: Signer): Promise<Authorization> {
+  async authorize(
+    action: 'delete' | 'edit',
+    linkHash: string,
+    signer: Signer,
+  ): Promise<Authorization> {
     const challenge = await this.requestChallenge(action, linkHash);
 
     const signature = await signer.signMessage({
@@ -38,21 +42,19 @@ export class AuthorizationService {
     return {
       challengeId: challenge_cid,
       secret: challenge.secret_random,
-    }
+    };
   }
 
-  private async requestChallenge(
-    action: "delete" | "edit", linkHash: string
-  ): Promise<Challenge> {
+  private async requestChallenge(action: 'delete' | 'edit', linkHash: string): Promise<Challenge> {
     const response = await fetch(`${this.env.backend}/challenge/new`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         link_hash: linkHash,
-        action: action
-      })
+        action: action,
+      }),
     });
 
     if (!response.ok) {
@@ -62,13 +64,15 @@ export class AuthorizationService {
     return response.json();
   }
 
-  private async submitSignedChallenge(challenge: SignedChallenge): Promise<SignedChallengeResponse> {
+  private async submitSignedChallenge(
+    challenge: SignedChallenge,
+  ): Promise<SignedChallengeResponse> {
     const response = await fetch(`${this.env.backend}/challenge/sign`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(challenge)
+      body: JSON.stringify(challenge),
     });
 
     if (!response.ok) {

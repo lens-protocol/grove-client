@@ -1,5 +1,5 @@
-import "vitest";
+import 'vitest';
 
-declare module "vitest" {
-	interface AsymmetricMatchersContaining extends JestExtendedMatchers {}
+declare module 'vitest' {
+  interface AsymmetricMatchersContaining extends JestExtendedMatchers {}
 }
