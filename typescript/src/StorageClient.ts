@@ -17,7 +17,6 @@ import {
   createAclEntry,
   createMultipartFormDataStream,
   extractLinkHash,
-  LENS_SCHEME,
   lensUri,
   type NameFilePair,
   never,
