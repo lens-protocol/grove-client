@@ -32,15 +32,15 @@
         
         const { folder, files } = await storage.uploadFolder(input.files); // That's it!
         
-        imageContainer.innerHTML = ''; // Clear previous images
+        imageContainer.innerHTML = '';
         files.forEach(file => {
           const img = document.createElement('img');
-          img.src = storage.resolve(file.uri); // Use the URL returned from the storage client
+          img.src = storage.resolve(file.uri); // Resolve the URI returned from the storage client
           img.alt = file.linkHash;
-          img.style.width = '150px'; // Optional: Set preview size
+          img.style.width = '150px';
           img.style.margin = '10px';
 
-          imageContainer.appendChild(img); // Add img element to container
+          imageContainer.appendChild(img);
         });
       });
     </script>
