@@ -31,7 +31,7 @@ export class AuthorizationService {
     const challenge = await this.requestChallenge(action, linkHash);
 
     const signature = await signer.signMessage({
-      message: challenge.secret_random,
+      message: challenge.message
     });
 
     const { challenge_cid } = await this.submitSignedChallenge({
