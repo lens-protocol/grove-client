@@ -100,8 +100,14 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         },
       });
 
-      // This could be tricky to assert until we can have a Lens Account owned by env.PRIVATE_KEY
-      await expect(client.editFile(resource.uri, file2, signer)).resolves.toBe(true);
+      await expect(
+        client.editFile(resource.uri, file2, signer, {
+          acl: {
+            template: 'lens_account',
+            lensAccount: '0x6982508145454Ce325dDbE47a25d4ec3d2311933',
+          },
+        }),
+      ).resolves.toBe(true);
     });
   });
 
@@ -114,7 +120,6 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         },
       });
 
-      // This could be tricky to assert until we can have a Lens Account owned by env.PRIVATE_KEY
       await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
     });
   });

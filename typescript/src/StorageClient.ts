@@ -164,7 +164,7 @@ export class StorageClient {
 
     const entries = builder.build();
     const response = await this.update(linkHash, authorization, entries);
-    console.log(response);
+
     return response.ok;
   }
 
