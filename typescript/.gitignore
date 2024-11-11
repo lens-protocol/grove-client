@@ -12,10 +12,11 @@ dist
 .DS_Store
 *.pem
 
-
 # lockfiles
 package-lock.json
 yarn.lock
+## only nested pnpm lockfiles (e.g. from examples/)
+**/pnpm-lock.yaml
 
 # debug
 .pnpm-debug.log*
