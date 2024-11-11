@@ -8,8 +8,7 @@
     "dev": "vite"
   },
   "dependencies": {
-    "@lens-protocol/storage-node-client": "file:../../",
-    "viem": "^2.21.44"
+    "@lens-protocol/storage-node-client": "file:../../"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
