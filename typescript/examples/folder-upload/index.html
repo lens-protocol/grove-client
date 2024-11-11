@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <h1>Folder Upload Example</h1>
+    
+    <form id="upload-form">
+      <label for="files">Select a folder to upload:</label>
+      <input type="file" name="files" accept="image/*" multiple  />
+      <button type="submit">Upload</button>
+    </form>
+
+    <div id="image-container"></div> <!-- Container to display image previews -->
+
+    <script type="module">
+      import { StorageClient, staging } from '@lens-protocol/storage-node-client';
+
+      const storage = StorageClient.create(staging);
+
+      const form = document.getElementById('upload-form');
+      const imageContainer = document.getElementById('image-container');
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        imageContainer.innerHTML = 'Uploading...';
+        
+        const input = form.elements['files'];
+        
+        const { folder, files } = await storage.uploadFolder(input.files); // That's it!
+        
+        imageContainer.innerHTML = '';
+        files.forEach(file => {
+          const img = document.createElement('img');
+          img.src = storage.resolve(file.uri); // Resolve the URI returned from the storage client
+          img.alt = file.linkHash;
+          img.style.width = '150px';
+          img.style.margin = '10px';
+
+          imageContainer.appendChild(img);
+        });
+      });
+    </script>
+  </body>
+</html>
