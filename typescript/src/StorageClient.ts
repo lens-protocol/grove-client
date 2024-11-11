@@ -49,7 +49,7 @@ export class StorageClient {
     const builder = MultipartEntriesBuilder.from([linkHash]).withFile(file);
 
     if (options.acl) {
-      builder.withAclTemplate(options.acl);
+      builder.withAclTemplate(options.acl, this.env);
     }
 
     const entries = builder.build();
@@ -87,7 +87,7 @@ export class StorageClient {
     }
 
     if (options.acl) {
-      builder.withAclTemplate(options.acl);
+      builder.withAclTemplate(options.acl, this.env);
     }
 
     const entries = builder.build();
@@ -159,12 +159,12 @@ export class StorageClient {
     const builder = MultipartEntriesBuilder.from([linkHash]).withFile(file);
 
     if (options.acl) {
-      builder.withAclTemplate(options.acl);
+      builder.withAclTemplate(options.acl, this.env);
     }
 
     const entries = builder.build();
     const response = await this.update(linkHash, authorization, entries);
-
+    console.log(response);
     return response.ok;
   }
 

@@ -8,8 +8,6 @@ export type LensAccountAclTemplate = {
 export type GenericAclTemplate = {
   template: 'generic_acl';
   contractAddress: string;
-  chainId: number;
-  networkType: 'evm'; // | other supported network types
   functionSig: string;
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   params: any[];

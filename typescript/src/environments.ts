@@ -4,6 +4,7 @@
 export type EnvironmentConfig = {
   name: string;
   backend: string;
+  chainId: number;
 };
 
 /**
@@ -13,6 +14,7 @@ export const mainnet: EnvironmentConfig = new Proxy(
   {
     name: 'mainnet',
     backend: 'https://example.com',
+    chainId: 42000,
   },
   {
     get: (_target, _prop) => {
@@ -27,6 +29,7 @@ export const mainnet: EnvironmentConfig = new Proxy(
 export const testnet: EnvironmentConfig = {
   name: 'testnet',
   backend: 'https://storage-api.testnet.lens.dev',
+  chainId: 37111,
 };
 
 /**
@@ -35,6 +38,7 @@ export const testnet: EnvironmentConfig = {
 export const staging: EnvironmentConfig = {
   name: 'staging',
   backend: 'https://storage-api.staging.lens.dev',
+  chainId: 1,
 };
 
 /**
@@ -42,5 +46,6 @@ export const staging: EnvironmentConfig = {
  */
 export const local: EnvironmentConfig = {
   name: 'local',
-  backend: 'http://localhost:3000/graphql',
+  backend: 'http://localhost:3010',
+  chainId: 1,
 };

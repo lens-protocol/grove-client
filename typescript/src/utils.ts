@@ -1,3 +1,4 @@
+import type { EnvironmentConfig } from './environments';
 import { InvariantError } from './errors';
 import type { AclTemplate, CreateIndexContent, Resource } from './types';
 
@@ -111,14 +112,17 @@ export function resourceFrom(linkHash: string): Resource {
   };
 }
 
-function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
+function createAclTemplateContent(
+  acl: AclTemplate,
+  env: EnvironmentConfig,
+): Record<string, unknown> {
   switch (acl.template) {
     case 'generic_acl':
       return {
         template: acl.template,
         contract_address: acl.contractAddress,
-        chain_id: acl.chainId,
-        network_type: acl.networkType,
+        chain_id: env.chainId,
+        network_type: 'evm',
         function_sig: acl.functionSig,
         params: acl.params,
       };
@@ -133,9 +137,9 @@ function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
   }
 }
 
-function createAclEntry(template: AclTemplate): MultipartEntry {
+function createAclEntry(template: AclTemplate, env: EnvironmentConfig): MultipartEntry {
   const name = 'lens-acl.json';
-  const content = createAclTemplateContent(template);
+  const content = createAclTemplateContent(template, env);
 
   return {
     name,
@@ -185,8 +189,8 @@ export class MultipartEntriesBuilder {
     return this;
   }
 
-  withAclTemplate(template: AclTemplate): MultipartEntriesBuilder {
-    this.entries.push(createAclEntry(template));
+  withAclTemplate(template: AclTemplate, env: EnvironmentConfig): MultipartEntriesBuilder {
+    this.entries.push(createAclEntry(template, env));
     return this;
   }
 

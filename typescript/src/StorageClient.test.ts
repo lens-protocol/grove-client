@@ -27,7 +27,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it('Then it should create the expected resource', async () => {
       const resource = await client.uploadFile(file1);
 
-      assertFileExist(client.resolve(resource.uri));
+      await assertFileExist(client.resolve(resource.uri));
       expect(resource).toBeDefined();
     });
   });
@@ -38,8 +38,8 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it('Then it should create the expected resources', async () => {
       const result = await client.uploadFolder(files);
 
-      assertFileExist(client.resolve(result.folder.uri));
-      assertFileExist(client.resolve(result.files[0]?.uri ?? never()));
+      await assertFileExist(client.resolve(result.folder.uri));
+      await assertFileExist(client.resolve(result.files[0]?.uri ?? never()));
     });
 
     it('Then it should support default directory listing', async () => {
@@ -93,11 +93,11 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
   });
 
   describe('When testing file editing', () => {
-    it.skip('Then it should deletion according to the specified ACL', async () => {
+    it('Then it should allow editing according to the specified ACL', async () => {
       const resource = await client.uploadFile(file1, {
         acl: {
           template: 'lens_account',
-          lensAccount: '0x1234567890123456789012345678901234567890',
+          lensAccount: '0x6982508145454Ce325dDbE47a25d4ec3d2311933',
         },
       });
 
@@ -107,11 +107,11 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
   });
 
   describe('When testing file deletion', () => {
-    it.skip('Then it should deletion according to the specified ACL', async () => {
+    it('Then it should allow deletion according to the specified ACL', async () => {
       const resource = await client.uploadFile(file1, {
         acl: {
           template: 'lens_account',
-          lensAccount: '0x1234567890123456789012345678901234567890',
+          lensAccount: '0x6982508145454Ce325dDbE47a25d4ec3d2311933',
         },
       });
 
