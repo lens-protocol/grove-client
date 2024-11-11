@@ -6,6 +6,10 @@
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": ["dist"],
+  "keywords": ["lens", "storage", "node"],
+
   "exports": {
     ".": {
       "import": "./dist/index.js",
