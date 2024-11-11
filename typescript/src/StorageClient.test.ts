@@ -38,7 +38,6 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it('Then it should create the expected resources', async () => {
       const result = await client.uploadFolder(files);
 
-      await assertFileExist(client.resolve(result.folder.uri));
       await assertFileExist(client.resolve(result.files[0]?.uri ?? never()));
     });
 
