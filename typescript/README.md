@@ -46,7 +46,7 @@ Upload a file:
 ```ts
 const { uri, linkHash } = await storageClient.uploadFile(file:File);
 
-console.log(uri); // lens://bafybeigdyrzt5sfp7udm7hu76u…
+console.log(uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
 ```
 
 Upload a mutable file:
@@ -93,15 +93,15 @@ const {
    folder   // { uri, linkHash }
 } = await storageClient.uploadFolder(files);
 
-console.log(folder.uri); // lens://bafybeigdyrzt5sfp7udm7hu76u…
-console.log(files[0].uri); // lens://bafybeiganother…
+console.log(folder.uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
+console.log(files[0].uri); // lens://b53d9c4ea2acbadc00b9d0fc61bafa6ba1bf161dade9ac465667f5…
 ```
 
 Delete a file or folder:
 
 ```ts
 const success = await storageClient.delete(
-  "lens://bafybeigdyrzt5sfp7udm7hu76u…",
+  "lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…",
   walletClient
 );
 
@@ -113,7 +113,7 @@ Edit a file:
 ```ts
 const file: File = ...
 
-const success = await storageClient.editFile('lens://bafybeigdyrzt5sfp7udm7hu76u…', file, walletClient);
+const success = await storageClient.editFile('lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…', file, walletClient);
 
 console.log(success); // true
 ```
