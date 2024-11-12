@@ -1,6 +1,6 @@
 {
   "name": "@lens-protocol/storage-node-client",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The easiest way to store data on Lens Storage Nodes.",
   "type": "module",
   "main": "dist/index.cjs",
