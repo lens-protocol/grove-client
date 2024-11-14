@@ -1,6 +1,6 @@
 import type { EnvironmentConfig } from './environments';
 import { InvariantError } from './errors';
-import type { AclTemplate, CreateIndexContent, Resource } from './types';
+import type { AclTemplate, CreateIndexContent, EvmAddress, GenericAclTemplate, LensAccountAclTemplate, Resource, WalletAddressAclTemplate } from './types';
 
 /**
  * Asserts that the given condition is truthy
@@ -131,6 +131,11 @@ function createAclTemplateContent(
         template: acl.template,
         lens_account: acl.lensAccount,
       };
+    case 'wallet_address':
+      return {
+        template: acl.template,
+        wallet_address: acl.walletAddress,
+      }
 
     default:
       never(`Unknown ACL template: ${acl}`);
@@ -211,5 +216,104 @@ export class MultipartEntriesBuilder {
 
   build(): ReadonlyArray<MultipartEntry> {
     return this.entries;
+  }
+}
+
+interface Builder<T> {
+  reset(): void;
+  build(): T;
+  isValid(acl: Partial<T>): boolean;
+}
+
+export class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
+  private acl: Partial<WalletAddressAclTemplate> = { template: "wallet_address" };
+
+  reset(): void {
+    this.acl = { template: "wallet_address" };
+  }
+
+  setWalletAddress(walletAddress: EvmAddress): this {
+    this.acl.walletAddress = walletAddress;
+    return this;
+  }
+
+  build(): WalletAddressAclTemplate {
+    if (!this.isValid(this.acl)) {
+      throw new Error('WalletAddressAclTemplate is missing required fields');
+    }
+    return this.acl as WalletAddressAclTemplate;
+  }
+
+  isValid(acl: Partial<WalletAddressAclTemplate>): acl is WalletAddressAclTemplate {
+    return !!(
+        acl.template === 'wallet_address' &&
+        acl.walletAddress
+    );
+  }
+}
+
+export class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemplate> {
+  private acl: Partial<LensAccountAclTemplate> = { template: "lens_account" };
+
+  reset(): void {
+    this.acl = { template: "lens_account" };
+  }
+
+  setLensAccount(lensAccount: EvmAddress): this {
+    this.acl.lensAccount = lensAccount;
+    return this;
+  }
+
+  build(): LensAccountAclTemplate {
+    if (!this.isValid(this.acl)) {
+      throw new Error('LensAccountAclTemplate is missing required fields');
+    }
+    return this.acl as LensAccountAclTemplate;
+  }
+
+  isValid(acl: Partial<LensAccountAclTemplate>): acl is LensAccountAclTemplate {
+    return !!(
+        acl.template === 'lens_account' &&
+        acl.lensAccount
+    );
+  }
+}
+
+export class GenericAclTemplateBuilder implements Builder<GenericAclTemplate> {
+  private acl: Partial<GenericAclTemplate> = { template: "generic_acl" };
+
+  reset(): void {
+    this.acl = { template: "generic_acl" };
+  }
+
+  setContractAddress(contractAddress: EvmAddress): this {
+    this.acl.contractAddress = contractAddress;
+    return this;
+  }
+
+  setFunctionSig(functionSig: string): this {
+    this.acl.functionSig = functionSig;
+    return this;
+  }
+
+  setParams(params: string[]): this {
+    this.acl.params = params;
+    return this;
+  }
+
+  build(): GenericAclTemplate {
+    if (!this.isValid(this.acl)) {
+      throw new Error('GenericAclTemplate is missing required fields');
+    }
+    return this.acl as GenericAclTemplate;
+  }
+
+  isValid(acl: Partial<GenericAclTemplate>): acl is GenericAclTemplate {
+    return !!(
+        acl.template === 'generic_acl' &&
+        acl.contractAddress &&
+        acl.functionSig &&
+        acl.params
+    );
   }
 }
