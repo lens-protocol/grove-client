@@ -5,6 +5,11 @@ export type LensAccountAclTemplate = {
   lensAccount: EvmAddress;
 };
 
+export type WalletAddressAclTemplate = {
+  template: 'wallet_address';
+  walletAddress: EvmAddress;
+};
+
 export type GenericAclTemplate = {
   template: 'generic_acl';
   contractAddress: string;
@@ -13,7 +18,7 @@ export type GenericAclTemplate = {
   params: any[];
 };
 
-export type AclTemplate = LensAccountAclTemplate | GenericAclTemplate;
+export type AclTemplate = LensAccountAclTemplate | WalletAddressAclTemplate | GenericAclTemplate
 
 export interface Signer {
   signMessage({ message }: { message: string }): Promise<string>;
