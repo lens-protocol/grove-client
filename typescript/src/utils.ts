@@ -225,15 +225,15 @@ interface Builder<T> {
   isValid(acl: Partial<T>): boolean;
 }
 
+/**
+ * This ACL template restricts access to any given Wallet Address.
+ */
 export function walletOnly(address: EvmAddress) {
   return new WalletAddressAclBuilder()
     .setWalletAddress(address)
     .build();
 }
 
-/**
- * This ACL template restricts access to any given Wallet Address.
- */
 class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
   private acl: Partial<WalletAddressAclTemplate> = { template: "wallet_address" };
 
@@ -261,15 +261,15 @@ class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
   }
 }
 
+/**
+ * This ACL template restricts access to any given Lens Account.
+ */
 export function lensAccountOnly(account: EvmAddress) {
   return new LensAccountAclTemplateBuilder()
     .setLensAccount(account)
     .build();
 }
 
-/**
- * This ACL template restricts access to any given Lens Account.
- */
 class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemplate> {
   private acl: Partial<LensAccountAclTemplate> = { template: "lens_account" };
 
@@ -297,6 +297,10 @@ class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemplate> {
   }
 }
 
+/**
+ * This ACL template restricts access to any given address that satisfies the contract call evaluation.
+ * When using this template, the contractAddress, functionSig and params parameters must be set.
+ */
 export function genericAcl(contractAddress: EvmAddress, functionSig: string, params: string[]) {
   return new GenericAclTemplateBuilder()
     .setContractAddress(contractAddress)
@@ -305,10 +309,6 @@ export function genericAcl(contractAddress: EvmAddress, functionSig: string, par
     .build();
 }
 
-/**
- * This ACL template restricts access to any given address that satisfies the contract call evaluation.
- * When using this template, the contractAddress, functionSig and params parameters must be set.
- */
 class GenericAclTemplateBuilder implements Builder<GenericAclTemplate> {
   private acl: Partial<GenericAclTemplate> = { template: "generic_acl" };
 
