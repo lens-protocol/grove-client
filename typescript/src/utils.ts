@@ -225,7 +225,16 @@ interface Builder<T> {
   isValid(acl: Partial<T>): boolean;
 }
 
-export class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
+export function walletOnly(address: EvmAddress) {
+  return new WalletAddressAclBuilder()
+    .setWalletAddress(address)
+    .build();
+}
+
+/**
+ * This ACL template restricts access to any given Wallet Address.
+ */
+class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
   private acl: Partial<WalletAddressAclTemplate> = { template: "wallet_address" };
 
   reset(): void {
@@ -252,7 +261,16 @@ export class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate
   }
 }
 
-export class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemplate> {
+export function lensAccountOnly(account: EvmAddress) {
+  return new LensAccountAclTemplateBuilder()
+    .setLensAccount(account)
+    .build();
+}
+
+/**
+ * This ACL template restricts access to any given Lens Account.
+ */
+class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemplate> {
   private acl: Partial<LensAccountAclTemplate> = { template: "lens_account" };
 
   reset(): void {
@@ -279,7 +297,19 @@ export class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemp
   }
 }
 
-export class GenericAclTemplateBuilder implements Builder<GenericAclTemplate> {
+export function genericAcl(contractAddress: EvmAddress, functionSig: string, params: string[]) {
+  return new GenericAclTemplateBuilder()
+    .setContractAddress(contractAddress)
+    .setFunctionSig(functionSig)
+    .setParams(params)
+    .build();
+}
+
+/**
+ * This ACL template restricts access to any given address that satisfies the contract call evaluation.
+ * When using this template, the contractAddress, functionSig and params parameters must be set.
+ */
+class GenericAclTemplateBuilder implements Builder<GenericAclTemplate> {
   private acl: Partial<GenericAclTemplate> = { template: "generic_acl" };
 
   reset(): void {
