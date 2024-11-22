@@ -52,7 +52,7 @@ export class AuthorizationService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        link_hash: storageKey,
+        storage_key: storageKey,
         action: action,
       }),
     });
