@@ -62,9 +62,14 @@ export type Resource = {
   uri: string;
 
   /**
-   * The link hash of the resource.
+   * The storage key of the resource.
    */
-  linkHash: string;
+  storageKey: string;
+
+  /**
+   * The gateway URL of this resource.
+   */
+  gatewayUrl: string;
 };
 
 export type UploadFolderResponse = {
@@ -72,9 +77,3 @@ export type UploadFolderResponse = {
   folder: Resource;
 };
 
-/**
- * @internal
- */
-export type LinkHash = {
-  link_hash: string;
-};

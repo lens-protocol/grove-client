@@ -13,7 +13,7 @@ import {
   MultipartEntriesBuilder,
   type MultipartEntry,
   createMultipartStream,
-  extractLinkHash,
+  extractStorageKey as extractStorageKey,
   invariant,
   resourceFrom,
 } from './utils';
@@ -44,9 +44,11 @@ export class StorageClient {
    * @returns The {@link Resource} to the uploaded file
    */
   async uploadFile(file: File, options: UploadFileOptions = {}): Promise<Resource> {
-    const [linkHash] = await this.requestLinkHashes();
+    const [resource] = await this.requestStorageKeys();
+    const gatewayUrl = resource.gatewayUrl;
+    const uri = resource.uri;
 
-    const builder = MultipartEntriesBuilder.from([linkHash]).withFile(file);
+    const builder = MultipartEntriesBuilder.from([resource.storageKey]).withFile(file);
 
     if (options.acl) {
       builder.withAclTemplate(options.acl, this.env);
@@ -54,13 +56,13 @@ export class StorageClient {
 
     const entries = builder.build();
 
-    const response = await this.create(linkHash, entries);
+    const response = await this.create(resource.storageKey, entries);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
     }
 
-    return resourceFrom(linkHash);
+    return resourceFrom(resource.storageKey, gatewayUrl, uri);
   }
 
   /**
@@ -76,14 +78,18 @@ export class StorageClient {
     options: UploadFolderOptions = {},
   ): Promise<UploadFolderResponse> {
     const needsIndex = 'index' in options && !!options.index;
-    const [folderHash, ...fileHashes] = await this.requestLinkHashes(
+    const [folderResource, ...fileResources] = await this.requestStorageKeys(
       files.length + (needsIndex ? 2 : 1),
     );
+    const gatewayUrl = folderResource.gatewayUrl;
+    const uri = folderResource.uri;
+    const folderHash = folderResource.storageKey;
+    const fileHashes = fileResources.map(f => f.storageKey);
 
     const builder = MultipartEntriesBuilder.from(fileHashes).withFiles(Array.from(files));
 
     if (options.index) {
-      builder.withIndexFile(options.index);
+      builder.withIndexFile(options.index, gatewayUrl, uri);
     }
 
     if (options.acl) {
@@ -98,37 +104,37 @@ export class StorageClient {
     }
 
     return {
-      folder: resourceFrom(folderHash),
-      files: fileHashes.map(resourceFrom),
+      folder: resourceFrom(folderHash, gatewayUrl, uri),
+      files: fileResources.map(fr => resourceFrom(fr.storageKey, fr.gatewayUrl, fr.uri)),
     };
   }
 
   /**
-   * Given an URI or link hash, resolves it to a URL.
+   * Given an URI or storage key, resolves it to a URL.
    *
-   * @param linkHashOrUri - The `lens://…` URI or link hash
+   * @param storageKeyOrUri - The `lens://…` URI or storage key
    * @returns The URL to the resource
    */
-  resolve(linkHashOrUri: string): string {
-    const linkHash = extractLinkHash(linkHashOrUri);
+  resolve(storageKeyOrUri: string): string {
+    const storageKey = extractStorageKey(storageKeyOrUri);
 
-    return `${this.env.backend}/${linkHash}`;
+    return `${this.env.backend}/${storageKey}`;
   }
 
   /**
    * Deletes a resource from the storage.
    *
    * @throws {@link AuthorizationError} if not authorized to delete the resource
-   * @param linkHashOrUri - The `lens://…` URI or link hash
+   * @param storageKeyOrUri - The `lens://…` URI or storage key
    * @param signer - The signer to use for the deletion
    * @returns Whether the deletion was successful or not
    */
-  async delete(linkHashOrUri: string, signer: Signer): Promise<boolean> {
-    const linkHash = extractLinkHash(linkHashOrUri);
-    const authorization = await this.authorization.authorize('delete', linkHash, signer);
+  async delete(storageKeyOrUri: string, signer: Signer): Promise<boolean> {
+    const storageKey = extractStorageKey(storageKeyOrUri);
+    const authorization = await this.authorization.authorize('delete', storageKey, signer);
 
     const response = await fetch(
-      `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
+      `${this.env.backend}/${storageKey}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
       {
         method: 'DELETE',
       },
@@ -142,33 +148,33 @@ export class StorageClient {
    *
    * @throws {@link StorageClientError} if editing the file fails
    * @throws {@link AuthorizationError} if not authorized to edit the file
-   * @param linkHashOrUri - The `lens://…` URI or link hash
+   * @param storageKeyOrUri - The `lens://…` URI or storage key
    * @param file - The file to replace the existing file with
    * @param signer - The signer to use for the edit
    * @param options - Any additional options for the edit
    */
   async editFile(
-    linkHashOrUri: string,
+    storageKeyOrUri: string,
     file: File,
     signer: Signer,
     options: EditFileOptions = {},
   ): Promise<boolean> {
-    const linkHash = extractLinkHash(linkHashOrUri);
-    const authorization = await this.authorization.authorize('edit', linkHash, signer);
+    const storageKey = extractStorageKey(storageKeyOrUri);
+    const authorization = await this.authorization.authorize('edit', storageKey, signer);
 
-    const builder = MultipartEntriesBuilder.from([linkHash]).withFile(file);
+    const builder = MultipartEntriesBuilder.from([storageKey]).withFile(file);
 
     if (options.acl) {
       builder.withAclTemplate(options.acl, this.env);
     }
 
     const entries = builder.build();
-    const response = await this.update(linkHash, authorization, entries);
+    const response = await this.update(storageKey, authorization, entries);
 
     return response.ok;
   }
 
-  private async requestLinkHashes(amount = 1): Promise<[string, ...string[]]> {
+  private async requestStorageKeys(amount = 1): Promise<[Resource, ...Resource[]]> {
     invariant(amount > 0, 'Amount must be greater than 0');
     const response = await fetch(`${this.env.backend}/link/new?amount=${amount}`, {
       method: 'POST',
@@ -180,21 +186,21 @@ export class StorageClient {
 
     const data = await response.json();
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    return data.map((entry: any) => entry.link_hash);
+    return data.map((entry: any) => resourceFrom(entry.storage_key, entry.gateway_url, entry.uri));
   }
 
-  private async create(linkHash: string, entries: readonly MultipartEntry[]): Promise<Response> {
-    return this.multipartRequest('POST', `${this.env.backend}/${linkHash}`, entries);
+  private async create(storageKey: string, entries: readonly MultipartEntry[]): Promise<Response> {
+    return this.multipartRequest('POST', `${this.env.backend}/${storageKey}`, entries);
   }
 
   private async update(
-    linkHash: string,
+    storageKey: string,
     authorization: Authorization,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
     return this.multipartRequest(
       'PUT',
-      `${this.env.backend}/${linkHash}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
+      `${this.env.backend}/${storageKey}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
       entries,
     );
   }
