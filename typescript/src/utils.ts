@@ -95,20 +95,21 @@ const LENS_URI_SUFFIX = `${LENS_SCHEME}://`;
 /**
  * @internal
  */
-export function extractLinkHash(linkHashOrUri: string): string {
-  if (linkHashOrUri.startsWith(LENS_URI_SUFFIX)) {
-    return linkHashOrUri.slice(LENS_URI_SUFFIX.length);
+export function extractStorageKey(storageKeyOrUri: string): string {
+  if (storageKeyOrUri.startsWith(LENS_URI_SUFFIX)) {
+    return storageKeyOrUri.slice(LENS_URI_SUFFIX.length);
   }
-  return linkHashOrUri;
+  return storageKeyOrUri;
 }
 
 /**
  * @internal
  */
-export function resourceFrom(linkHash: string): Resource {
+export function resourceFrom(storageKey: string, gatewayUrl: string, uri: string): Resource {
   return {
-    linkHash,
-    uri: `${LENS_SCHEME}://${linkHash}`,
+    storageKey,
+    gatewayUrl,
+    uri,
   };
 }
 
@@ -173,7 +174,7 @@ export class MultipartEntriesBuilder {
   private idx = 0;
   private entries: MultipartEntry[] = [];
 
-  private constructor(private readonly fileHashes: readonly string[]) {}
+  private constructor(private readonly fileStorageKeys: readonly string[]) {}
 
   static from(fileHashes: readonly string[]): MultipartEntriesBuilder {
     return new MultipartEntriesBuilder(fileHashes);
@@ -181,7 +182,7 @@ export class MultipartEntriesBuilder {
 
   withFile(file: File): MultipartEntriesBuilder {
     this.entries.push({
-      name: this.fileHashes[this.idx++] ?? never('Unexpected file, no hash available'),
+      name: this.fileStorageKeys[this.idx++] ?? never('Unexpected file, no storage key available'),
       file,
     });
     return this;
@@ -199,14 +200,14 @@ export class MultipartEntriesBuilder {
     return this;
   }
 
-  withIndexFile(index: CreateIndexContent | File | true): MultipartEntriesBuilder {
+  withIndexFile(index: CreateIndexContent | File | true, gatewayUrl: string, uri: string): MultipartEntriesBuilder {
     const file =
       index instanceof File
         ? index
         : createIndexFile(
             index === true
-              ? createDefaultIndexContent(this.fileHashes)
-              : index.call(null, this.fileHashes.map(resourceFrom)),
+              ? createDefaultIndexContent(this.fileStorageKeys)
+              : index.call(null, this.fileStorageKeys.map(fileHash => resourceFrom(fileHash, gatewayUrl, uri))),
           );
 
     invariant(file.name === 'index.json', "Index file must be named 'index.json'");

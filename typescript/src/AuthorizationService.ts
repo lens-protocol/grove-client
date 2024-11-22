@@ -25,10 +25,10 @@ export class AuthorizationService {
 
   async authorize(
     action: 'delete' | 'edit',
-    linkHash: string,
+    storageKey: string,
     signer: Signer,
   ): Promise<Authorization> {
-    const challenge = await this.requestChallenge(action, linkHash);
+    const challenge = await this.requestChallenge(action, storageKey);
 
     const signature = await signer.signMessage({
       message: challenge.message
@@ -45,14 +45,14 @@ export class AuthorizationService {
     };
   }
 
-  private async requestChallenge(action: 'delete' | 'edit', linkHash: string): Promise<Challenge> {
+  private async requestChallenge(action: 'delete' | 'edit', storageKey: string): Promise<Challenge> {
     const response = await fetch(`${this.env.backend}/challenge/new`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        link_hash: linkHash,
+        link_hash: storageKey,
         action: action,
       }),
     });

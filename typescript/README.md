@@ -44,7 +44,7 @@ interface Signer {
 Upload a file:
 
 ```ts
-const { uri, linkHash } = await storageClient.uploadFile(file:File);
+const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file:File);
 
 console.log(uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
 ```
@@ -52,13 +52,13 @@ console.log(uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b94467
 Upload a mutable file:
 
 ```ts
-const { uri, linkHash } = await storageClient.uploadFile(file:File, { mutable: true });
+const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file:File, { mutable: true });
 ```
 
 Use the `lens_account` ACL template:
 
 ```ts
-const { uri, linkHash } = await storageClient.uploadFile(file:File, {
+const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file:File, {
    acl: {
       template: 'lens_account',
       lensAccount: '0x1234567890abcdef1234567890abcdef12345678'
@@ -71,7 +71,7 @@ Use the `generic_acl` ACL template:
 ```ts
 const file: File = ...
 
-const { uri, linkHash } = await storageClient.uploadFile(file, {
+const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file, {
    acl: {
       template: 'generic_acl',
       contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
@@ -89,8 +89,8 @@ Upload a folder:
 const files: FileList = ...
 
 const {
-   files,   // [ { uri, linkHash } ],
-   folder   // { uri, linkHash }
+   files,   // [ { uri, storageKey, gatewayUrl } ],
+   folder   // { uri, storageKey, gatewayUrl }
 } = await storageClient.uploadFolder(files);
 
 console.log(folder.uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
