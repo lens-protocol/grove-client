@@ -1,7 +1,7 @@
 import { privateKeyToAccount } from 'viem/accounts';
 import { describe, expect, it } from 'vitest';
 import { StorageClient } from './StorageClient';
-import { staging } from './environments';
+import { testnet } from './environments';
 import type { Resource } from './types';
 import { lensAccountOnly, never, walletOnly } from './utils';
 
@@ -21,7 +21,7 @@ async function assertFileExist(url: string) {
 }
 
 describe(`Given an instance of the '${StorageClient.name}'`, () => {
-  const client = StorageClient.create(staging);
+  const client = StorageClient.create(testnet);
 
   describe('When testing single file uploads', () => {
     it('Then it should create the expected resource', async () => {
@@ -93,18 +93,16 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
 
   describe('When testing file editing with Lens Accounts', () => {
     it('Then it should allow editing according to the specified ACL', async () => {
-      const acl = lensAccountOnly("0x6982508145454Ce325dDbE47a25d4ec3d2311933");
+      const acl = lensAccountOnly(import.meta.env.ACCOUNT);
       const resource = await client.uploadFile(file1, { acl });
 
-      await expect(
-        client.editFile(resource.uri, file2, signer, { acl })
-      ).resolves.toBe(true);
+      await expect(client.editFile(resource.uri, file2, signer, { acl })).resolves.toBe(true);
     });
   });
 
   describe('When testing file deletion with Lens Accounts', () => {
     it('Then it should allow deletion according to the specified ACL', async () => {
-      const acl = lensAccountOnly("0x6982508145454Ce325dDbE47a25d4ec3d2311933");
+      const acl = lensAccountOnly(import.meta.env.ACCOUNT);
       const resource = await client.uploadFile(file1, { acl });
 
       await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
@@ -113,18 +111,16 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
 
   describe('When testing file editing with Wallet Addresses', () => {
     it('Then it should allow editing according to the specified ACL', async () => {
-      const acl = walletOnly("0x24d1017aE28A0DD8dd8B4544B7B60E11D5E196eC");
+      const acl = walletOnly(import.meta.env.ADDRESS);
       const resource = await client.uploadFile(file1, { acl });
 
-      await expect(
-        client.editFile(resource.uri, file2, signer, { acl })
-      ).resolves.toBe(true);
+      await expect(client.editFile(resource.uri, file2, signer, { acl })).resolves.toBe(true);
     });
   });
 
   describe('When testing file deletion with Wallet Addresses', () => {
     it('Then it should allow deletion according to the specified ACL', async () => {
-      const acl = walletOnly("0x24d1017aE28A0DD8dd8B4544B7B60E11D5E196eC");
+      const acl = walletOnly(import.meta.env.ADDRESS);
       const resource = await client.uploadFile(file1, { acl });
 
       await expect(client.delete(resource.uri, signer)).resolves.toBe(true);

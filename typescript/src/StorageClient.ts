@@ -13,8 +13,9 @@ import {
   MultipartEntriesBuilder,
   type MultipartEntry,
   createMultipartStream,
-  extractStorageKey as extractStorageKey,
+  extractStorageKey,
   invariant,
+  parseResource,
   resourceFrom,
 } from './utils';
 
@@ -44,11 +45,8 @@ export class StorageClient {
    * @returns The {@link Resource} to the uploaded file
    */
   async uploadFile(file: File, options: UploadFileOptions = {}): Promise<Resource> {
-    const [resource] = await this.requestStorageKeys();
-    const gatewayUrl = resource.gatewayUrl;
-    const uri = resource.uri;
-
-    const builder = MultipartEntriesBuilder.from([resource.storageKey]).withFile(file);
+    const [resource] = await this.allocateStorage(1);
+    const builder = MultipartEntriesBuilder.from([resource]).withFile(file);
 
     if (options.acl) {
       builder.withAclTemplate(options.acl, this.env);
@@ -62,7 +60,7 @@ export class StorageClient {
       throw await StorageClientError.fromResponse(response);
     }
 
-    return resourceFrom(resource.storageKey, gatewayUrl, uri);
+    return resource;
   }
 
   /**
@@ -78,18 +76,14 @@ export class StorageClient {
     options: UploadFolderOptions = {},
   ): Promise<UploadFolderResponse> {
     const needsIndex = 'index' in options && !!options.index;
-    const [folderResource, ...fileResources] = await this.requestStorageKeys(
+    const [folderResource, ...fileResources] = await this.allocateStorage(
       files.length + (needsIndex ? 2 : 1),
     );
-    const gatewayUrl = folderResource.gatewayUrl;
-    const uri = folderResource.uri;
-    const folderHash = folderResource.storageKey;
-    const fileHashes = fileResources.map(f => f.storageKey);
 
-    const builder = MultipartEntriesBuilder.from(fileHashes).withFiles(Array.from(files));
+    const builder = MultipartEntriesBuilder.from(fileResources).withFiles(Array.from(files));
 
     if (options.index) {
-      builder.withIndexFile(options.index, gatewayUrl, uri);
+      builder.withIndexFile(options.index);
     }
 
     if (options.acl) {
@@ -97,15 +91,15 @@ export class StorageClient {
     }
 
     const entries = builder.build();
-    const response = await this.create(folderHash, entries);
+    const response = await this.create(folderResource.storageKey, entries);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
     }
 
     return {
-      folder: resourceFrom(folderHash, gatewayUrl, uri),
-      files: fileResources.map(fr => resourceFrom(fr.storageKey, fr.gatewayUrl, fr.uri)),
+      folder: folderResource,
+      files: fileResources,
     };
   }
 
@@ -149,20 +143,22 @@ export class StorageClient {
    * @throws {@link StorageClientError} if editing the file fails
    * @throws {@link AuthorizationError} if not authorized to edit the file
    * @param storageKeyOrUri - The `lens://…` URI or storage key
-   * @param file - The file to replace the existing file with
+   * @param newFile - The file to replace the existing file with
    * @param signer - The signer to use for the edit
    * @param options - Any additional options for the edit
    */
   async editFile(
     storageKeyOrUri: string,
-    file: File,
+    newFile: File,
     signer: Signer,
     options: EditFileOptions = {},
   ): Promise<boolean> {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const authorization = await this.authorization.authorize('edit', storageKey, signer);
 
-    const builder = MultipartEntriesBuilder.from([storageKey]).withFile(file);
+    const builder = MultipartEntriesBuilder.from([resourceFrom(storageKey, this.env)]).withFile(
+      newFile,
+    );
 
     if (options.acl) {
       builder.withAclTemplate(options.acl, this.env);
@@ -174,7 +170,7 @@ export class StorageClient {
     return response.ok;
   }
 
-  private async requestStorageKeys(amount = 1): Promise<[Resource, ...Resource[]]> {
+  private async allocateStorage(amount: number): Promise<[Resource, ...Resource[]]> {
     invariant(amount > 0, 'Amount must be greater than 0');
     const response = await fetch(`${this.env.backend}/link/new?amount=${amount}`, {
       method: 'POST',
@@ -185,8 +181,7 @@ export class StorageClient {
     }
 
     const data = await response.json();
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    return data.map((entry: any) => resourceFrom(entry.storage_key, entry.gateway_url, entry.uri));
+    return data.map(parseResource);
   }
 
   private async create(storageKey: string, entries: readonly MultipartEntry[]): Promise<Response> {
