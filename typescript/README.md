@@ -164,9 +164,11 @@ and populate the `PRIVATE_KEY` environment variable:
 
 ```bash filename=".env"
 PRIVATE_KEY=0x…
+ACCOUNT=0x…
+ADDRESS=
 ```
 
-with the private key of a Lens Account owner (needed by Lens Account ACL tests).
+with the details of a Lens Account owner (needed by Lens Account ACL tests).
 
 Install the dependencies:
 

@@ -1,6 +1,14 @@
 import type { EnvironmentConfig } from './environments';
 import { InvariantError } from './errors';
-import type { AclTemplate, CreateIndexContent, EvmAddress, GenericAclTemplate, LensAccountAclTemplate, Resource, WalletAddressAclTemplate } from './types';
+import type {
+  AclTemplate,
+  CreateIndexContent,
+  EvmAddress,
+  GenericAclTemplate,
+  LensAccountAclTemplate,
+  Resource,
+  WalletAddressAclTemplate,
+} from './types';
 
 /**
  * Asserts that the given condition is truthy
@@ -105,11 +113,22 @@ export function extractStorageKey(storageKeyOrUri: string): string {
 /**
  * @internal
  */
-export function resourceFrom(storageKey: string, gatewayUrl: string, uri: string): Resource {
+export function resourceFrom(storageKey: string, env: EnvironmentConfig): Resource {
   return {
     storageKey,
-    gatewayUrl,
-    uri,
+    gatewayUrl: `${env.backend}/${storageKey}`,
+    uri: `${LENS_SCHEME}://${storageKey}`,
+  };
+}
+
+/**
+ * @internal
+ */
+export function parseResource(data: Record<string, string>): Resource {
+  return {
+    storageKey: data.storage_key ?? never('Missing storage key'),
+    gatewayUrl: data.gateway_url ?? never('Missing gateway URL'),
+    uri: data.uri ?? never('Missing URI'),
   };
 }
 
@@ -136,7 +155,7 @@ function createAclTemplateContent(
       return {
         template: acl.template,
         wallet_address: acl.walletAddress,
-      }
+      };
 
     default:
       never(`Unknown ACL template: ${acl}`);
@@ -155,9 +174,9 @@ function createAclEntry(template: AclTemplate, env: EnvironmentConfig): Multipar
   };
 }
 
-function createDefaultIndexContent(fileHashes: readonly string[]): Record<string, unknown> {
+function createDefaultIndexContent(files: readonly Resource[]): Record<string, unknown> {
   return {
-    files: fileHashes,
+    files: files.map((file) => file.storageKey),
   };
 }
 
@@ -174,15 +193,17 @@ export class MultipartEntriesBuilder {
   private idx = 0;
   private entries: MultipartEntry[] = [];
 
-  private constructor(private readonly fileStorageKeys: readonly string[]) {}
+  private constructor(private readonly allocations: readonly Resource[]) {}
 
-  static from(fileHashes: readonly string[]): MultipartEntriesBuilder {
-    return new MultipartEntriesBuilder(fileHashes);
+  static from(allocations: readonly Resource[]): MultipartEntriesBuilder {
+    return new MultipartEntriesBuilder(allocations);
   }
 
   withFile(file: File): MultipartEntriesBuilder {
     this.entries.push({
-      name: this.fileStorageKeys[this.idx++] ?? never('Unexpected file, no storage key available'),
+      name:
+        this.allocations[this.idx++]?.storageKey ??
+        never('Unexpected file, no storage key available'),
       file,
     });
     return this;
@@ -200,14 +221,14 @@ export class MultipartEntriesBuilder {
     return this;
   }
 
-  withIndexFile(index: CreateIndexContent | File | true, gatewayUrl: string, uri: string): MultipartEntriesBuilder {
+  withIndexFile(index: CreateIndexContent | File | true): MultipartEntriesBuilder {
     const file =
       index instanceof File
         ? index
         : createIndexFile(
             index === true
-              ? createDefaultIndexContent(this.fileStorageKeys)
-              : index.call(null, this.fileStorageKeys.map(fileHash => resourceFrom(fileHash, gatewayUrl, uri))),
+              ? createDefaultIndexContent(this.allocations)
+              : index.call(null, this.allocations.slice()), // shallow copy
           );
 
     invariant(file.name === 'index.json', "Index file must be named 'index.json'");
@@ -230,16 +251,14 @@ interface Builder<T> {
  * This ACL template restricts access to any given Wallet Address.
  */
 export function walletOnly(address: EvmAddress) {
-  return new WalletAddressAclBuilder()
-    .setWalletAddress(address)
-    .build();
+  return new WalletAddressAclBuilder().setWalletAddress(address).build();
 }
 
 class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
-  private acl: Partial<WalletAddressAclTemplate> = { template: "wallet_address" };
+  private acl: Partial<WalletAddressAclTemplate> = { template: 'wallet_address' };
 
   reset(): void {
-    this.acl = { template: "wallet_address" };
+    this.acl = { template: 'wallet_address' };
   }
 
   setWalletAddress(walletAddress: EvmAddress): this {
@@ -255,10 +274,7 @@ class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
   }
 
   isValid(acl: Partial<WalletAddressAclTemplate>): acl is WalletAddressAclTemplate {
-    return !!(
-        acl.template === 'wallet_address' &&
-        acl.walletAddress
-    );
+    return !!(acl.template === 'wallet_address' && acl.walletAddress);
   }
 }
 
@@ -266,16 +282,14 @@ class WalletAddressAclBuilder implements Builder<WalletAddressAclTemplate> {
  * This ACL template restricts access to any given Lens Account.
  */
 export function lensAccountOnly(account: EvmAddress) {
-  return new LensAccountAclTemplateBuilder()
-    .setLensAccount(account)
-    .build();
+  return new LensAccountAclTemplateBuilder().setLensAccount(account).build();
 }
 
 class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemplate> {
-  private acl: Partial<LensAccountAclTemplate> = { template: "lens_account" };
+  private acl: Partial<LensAccountAclTemplate> = { template: 'lens_account' };
 
   reset(): void {
-    this.acl = { template: "lens_account" };
+    this.acl = { template: 'lens_account' };
   }
 
   setLensAccount(lensAccount: EvmAddress): this {
@@ -291,10 +305,7 @@ class LensAccountAclTemplateBuilder implements Builder<LensAccountAclTemplate> {
   }
 
   isValid(acl: Partial<LensAccountAclTemplate>): acl is LensAccountAclTemplate {
-    return !!(
-        acl.template === 'lens_account' &&
-        acl.lensAccount
-    );
+    return !!(acl.template === 'lens_account' && acl.lensAccount);
   }
 }
 
@@ -311,10 +322,10 @@ export function genericAcl(contractAddress: EvmAddress, functionSig: string, par
 }
 
 class GenericAclTemplateBuilder implements Builder<GenericAclTemplate> {
-  private acl: Partial<GenericAclTemplate> = { template: "generic_acl" };
+  private acl: Partial<GenericAclTemplate> = { template: 'generic_acl' };
 
   reset(): void {
-    this.acl = { template: "generic_acl" };
+    this.acl = { template: 'generic_acl' };
   }
 
   setContractAddress(contractAddress: EvmAddress): this {
@@ -341,10 +352,10 @@ class GenericAclTemplateBuilder implements Builder<GenericAclTemplate> {
 
   isValid(acl: Partial<GenericAclTemplate>): acl is GenericAclTemplate {
     return !!(
-        acl.template === 'generic_acl' &&
-        acl.contractAddress &&
-        acl.functionSig &&
-        acl.params
+      acl.template === 'generic_acl' &&
+      acl.contractAddress &&
+      acl.functionSig &&
+      acl.params
     );
   }
 }

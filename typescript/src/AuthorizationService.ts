@@ -31,7 +31,7 @@ export class AuthorizationService {
     const challenge = await this.requestChallenge(action, storageKey);
 
     const signature = await signer.signMessage({
-      message: challenge.message
+      message: challenge.message,
     });
 
     const { challenge_cid } = await this.submitSignedChallenge({
@@ -45,7 +45,10 @@ export class AuthorizationService {
     };
   }
 
-  private async requestChallenge(action: 'delete' | 'edit', storageKey: string): Promise<Challenge> {
+  private async requestChallenge(
+    action: 'delete' | 'edit',
+    storageKey: string,
+  ): Promise<Challenge> {
     const response = await fetch(`${this.env.backend}/challenge/new`, {
       method: 'POST',
       headers: {

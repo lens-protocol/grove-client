@@ -18,7 +18,7 @@ export type GenericAclTemplate = {
   params: any[];
 };
 
-export type AclTemplate = LensAccountAclTemplate | WalletAddressAclTemplate | GenericAclTemplate
+export type AclTemplate = LensAccountAclTemplate | WalletAddressAclTemplate | GenericAclTemplate;
 
 export interface Signer {
   signMessage({ message }: { message: string }): Promise<string>;
@@ -36,11 +36,11 @@ export type AccessOptions = {
 export type UploadFileOptions = AccessOptions;
 
 /**
- * A factory function that, given the list of {@link Resource}s,
+ * A factory function that, given the list of {@link Resource},
  * creates a JSON serializable object that will be used as the
  * directory index file.
  */
-export type CreateIndexContent = (urls: Resource[]) => unknown;
+export type CreateIndexContent = (files: Resource[]) => unknown;
 
 export type UploadFolderOptions = AccessOptions & {
   /**
@@ -76,4 +76,3 @@ export type UploadFolderResponse = {
   files: Resource[];
   folder: Resource;
 };
-
