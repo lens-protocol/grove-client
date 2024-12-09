@@ -1,0 +1,60 @@
+name: "Verify"
+on:
+  workflow_call:
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ./typescript
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: latest
+
+      - name: Run Biome
+        run: biome ci .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "./typescript/.nvmrc"
+          cache: "pnpm"
+          cache-dependency-path: "./typescript/pnpm-lock.yaml"
+
+      - name: Install Dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Setup Environment Variables
+        shell: bash
+        run: |
+          echo "PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}" >> .env
+          echo "ACCOUNT=${{ vars.ACCOUNT }}" >> .env
+          echo "ADDRESS=${{ vars.ADDRESS }}" >> .env
+
+      - name: Run Tests
+        run: pnpm test
