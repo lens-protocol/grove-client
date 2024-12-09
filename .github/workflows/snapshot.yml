@@ -47,7 +47,7 @@ jobs:
 
       - name: Create Snapshot
         id: create_snapshot
-        run: pnpm changeset version --snapshot next || echo "No unreleased changesets found"
+        run: pnpm changeset version --snapshot latest || echo "No unreleased changesets found"
 
       - name: Check for Changeset
         id: check_changeset
@@ -59,4 +59,4 @@ jobs:
 
       - name: Publish Snapshot
         if: env.changeset_exists == 'true'
-        run: pnpm changeset publish --snapshot --tag next --no-git-tag
+        run: pnpm changeset publish --snapshot --tag latest --no-git-tag
