@@ -8,8 +8,8 @@
     <h1>Folder Upload Example</h1>
 
     <form id="upload-form">
-      <label for="files">Select a folder to upload:</label>
-      <input type="file" name="files" accept="image/*" multiple />
+      <label for="files">Select an image to upload:</label>
+      <input type="file" name="files" accept="image/*" />
       <button type="submit">Upload</button>
     </form>
 
@@ -34,18 +34,17 @@
 
         const input = form.elements["files"];
 
-        const { folder, files } = await storage.uploadFolder(input.files); // That's it!
+        const file = await storage.uploadFile(input.files[0]); // That's it!
 
         imageContainer.innerHTML = "";
-        files.forEach((file) => {
-          const img = document.createElement("img");
-          img.src = storage.resolve(file.uri); // Resolve the URI returned from the storage client
-          img.alt = file.storageKey;
-          img.style.width = "150px";
-          img.style.margin = "10px";
 
-          imageContainer.appendChild(img);
-        });
+        const img = document.createElement("img");
+        img.src = file.gatewayUrl; // Resolved gateway URL
+        img.alt = file.storageKey;
+        img.style.width = "150px";
+        img.style.margin = "10px";
+
+        imageContainer.appendChild(img);
       });
     </script>
   </body>
