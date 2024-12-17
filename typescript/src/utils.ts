@@ -66,14 +66,7 @@ async function* multipartStream(entries: readonly MultipartEntry[], boundary: st
   yield `--${boundary}--\r\n`;
 }
 
-/**
- * Creates a multipart/form-data stream from a list of entries.
- *
- * @internal
- * @param entries - The list of files to create the stream from
- * @returns The multipart/form-data stream and the boundary string
- */
-export function createMultipartStream(entries: readonly MultipartEntry[]): MultipartFormDataStream {
+function createMultipartStream(entries: readonly MultipartEntry[]): MultipartFormDataStream {
   const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
 
   return {
@@ -90,6 +83,70 @@ export function createMultipartStream(entries: readonly MultipartEntry[]): Multi
       },
     }),
     boundary,
+  };
+}
+
+function detectStreamSupport(): boolean {
+  try {
+    const testStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([0])); // Minimal stream chunk
+        controller.close();
+      },
+    });
+    new Request('about:blank', {
+      method: 'POST',
+      body: testStream,
+      // Required for streaming request body in some browsers,
+      // or it will fail and assume it's not supported
+      // @ts-ignore
+      duplex: 'half',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function createFormData(entries: readonly MultipartEntry[]): FormData {
+  const formData = new FormData();
+
+  for (const { name, file } of entries) {
+    formData.append(name, file, file.name);
+  }
+
+  return formData;
+}
+
+/**
+ * Creates a multipart/form-data RequestInit object from a list of entries.
+ *
+ * @internal
+ */
+export function createMultipartRequestInit(
+  method: 'POST' | 'PUT',
+  entries: readonly MultipartEntry[],
+): RequestInit {
+  if (detectStreamSupport()) {
+    const { stream, boundary } = createMultipartStream(entries);
+
+    return {
+      method,
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body: stream,
+      // @ts-ignore
+      duplex: 'half', // Required for streaming request body in some browsers
+    };
+  }
+
+  // Fallback to FormData for browsers without ReadableStream support as Fetch body
+  const formData = createFormData(entries);
+
+  return {
+    method,
+    body: formData,
   };
 }
 
