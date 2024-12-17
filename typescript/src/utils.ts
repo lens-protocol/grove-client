@@ -104,9 +104,8 @@ async function detectStreamSupport(): Promise<boolean> {
       duplex: 'half',
     });
     const body = await request.text();
-    console.log({ body });
 
-    return body === '[object ReadableStream]';
+    return body === '\x00'; // if something [object ReadableStream], then not supported
   } catch {
     return false;
   }
