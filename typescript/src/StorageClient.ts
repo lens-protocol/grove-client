@@ -13,7 +13,7 @@ import type {
 import {
   MultipartEntriesBuilder,
   type MultipartEntry,
-  createMultipartStream,
+  createMultipartRequestInit,
   extractStorageKey,
   invariant,
   parseResource,
@@ -229,16 +229,6 @@ export class StorageClient {
     url: string,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    const { boundary, stream } = createMultipartStream(entries);
-
-    return fetch(url, {
-      method,
-      headers: {
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-      },
-      body: stream,
-      // @ts-ignore
-      duplex: 'half', // Required for streaming request body in some browsers
-    });
+    return fetch(url, createMultipartRequestInit(method, entries));
   }
 }
