@@ -229,6 +229,6 @@ export class StorageClient {
     url: string,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    return fetch(url, createMultipartRequestInit(method, entries));
+    return fetch(url, await createMultipartRequestInit(method, entries));
   }
 }

@@ -86,7 +86,7 @@ function createMultipartStream(entries: readonly MultipartEntry[]): MultipartFor
   };
 }
 
-function detectStreamSupport(): boolean {
+async function detectStreamSupport(): Promise<boolean> {
   try {
     const testStream = new ReadableStream({
       start(controller) {
@@ -94,7 +94,8 @@ function detectStreamSupport(): boolean {
         controller.close();
       },
     });
-    new Request('about:blank', {
+
+    const request = new Request('about:blank', {
       method: 'POST',
       body: testStream,
       // Required for streaming request body in some browsers,
@@ -102,7 +103,10 @@ function detectStreamSupport(): boolean {
       // @ts-ignore
       duplex: 'half',
     });
-    return true;
+    const body = await request.text();
+    console.log({ body });
+
+    return body === '[object ReadableStream]';
   } catch {
     return false;
   }
@@ -123,11 +127,11 @@ function createFormData(entries: readonly MultipartEntry[]): FormData {
  *
  * @internal
  */
-export function createMultipartRequestInit(
+export async function createMultipartRequestInit(
   method: 'POST' | 'PUT',
   entries: readonly MultipartEntry[],
-): RequestInit {
-  if (detectStreamSupport()) {
+): Promise<RequestInit> {
+  if (await detectStreamSupport()) {
     const { stream, boundary } = createMultipartStream(entries);
 
     return {
