@@ -35,6 +35,15 @@ export type AccessOptions = {
 
 export type UploadFileOptions = AccessOptions;
 
+export type UploadJsonOptions = UploadFileOptions & {
+  /**
+   * The name of the file.
+   *
+   * @defaultValue `data.json`
+   */
+  name?: string;
+};
+
 /**
  * A factory function that, given the list of {@link Resource},
  * creates a JSON serializable object that will be used as the

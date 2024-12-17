@@ -83,6 +83,16 @@ const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file, {
 });
 ```
 
+Upload an arbitrary JS Object as JSON file:
+
+```ts
+const obj = { key: 'value' };
+
+const { uri, storageKey, gatewayUrl } = await storageClient.uploadAsJson(obj);
+
+console.log(uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
+```
+
 Upload a folder:
 
 ```ts

@@ -32,6 +32,15 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     });
   });
 
+  describe('When testing a JS Object upload', () => {
+    it('Then it should create the expected resource', async () => {
+      const resource = await client.uploadAsJson({ test: 'test' });
+
+      await assertFileExist(client.resolve(resource.uri));
+      expect(resource).toBeDefined();
+    });
+  });
+
   describe('When testing folder uploads', () => {
     const files = [file1, file2];
 

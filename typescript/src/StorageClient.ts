@@ -8,6 +8,7 @@ import type {
   UploadFileOptions,
   UploadFolderOptions,
   UploadFolderResponse,
+  UploadJsonOptions,
 } from './types';
 import {
   MultipartEntriesBuilder,
@@ -61,6 +62,29 @@ export class StorageClient {
     }
 
     return resource;
+  }
+
+  /**
+   * Uploads a JSON object to the storage.
+   *
+   * This is a convenience method that serializes the JSON object to a string before uploading it. The code is equivalent to:
+   * ```ts
+   * const file = new File([JSON.stringify(json)], 'data.json', { type: 'application/json' });
+   *
+   * const { uri } = await client.uploadFile(file);
+   * ```
+   *
+   *
+   * @throws {@link StorageClientError} if uploading the JSON fails
+   * @param json - The JSON object to upload
+   * @param options - Any additional options for the upload
+   * @returns The {@link Resource} to the uploaded JSON
+   */
+  async uploadAsJson(json: unknown, options: UploadJsonOptions = {}): Promise<Resource> {
+    const file = new File([JSON.stringify(json)], options.name ?? 'data.json', {
+      type: 'application/json',
+    });
+    return this.uploadFile(file, options);
   }
 
   /**
