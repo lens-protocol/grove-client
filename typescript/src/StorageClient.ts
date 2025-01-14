@@ -19,6 +19,7 @@ import {
   parseResource,
   resourceFrom,
 } from './utils';
+import fetch from "node-fetch";
 
 export class StorageClient {
   private readonly authorization: AuthorizationService;

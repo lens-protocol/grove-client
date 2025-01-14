@@ -1,7 +1,7 @@
 import { privateKeyToAccount } from 'viem/accounts';
 import { describe, expect, it } from 'vitest';
 import { StorageClient } from './StorageClient';
-import { testnet } from './environments';
+import { staging } from './environments';
 import type { Resource } from './types';
 import { lensAccountOnly, never, walletOnly } from './utils';
 
@@ -21,7 +21,7 @@ async function assertFileExist(url: string) {
 }
 
 describe(`Given an instance of the '${StorageClient.name}'`, () => {
-  const client = StorageClient.create(testnet);
+  const client = StorageClient.create(staging);
 
   describe('When testing single file uploads', () => {
     it('Then it should create the expected resource', async () => {
