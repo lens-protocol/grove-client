@@ -1,5 +1,6 @@
+import nodeFetch from 'node-fetch';
 import { privateKeyToAccount } from 'viem/accounts';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { StorageClient } from './StorageClient';
 import { testnet } from './environments';
 import type { Resource } from './types';
@@ -133,6 +134,19 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const resource = await client.uploadFile(file1, { acl });
 
       await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
+    });
+  });
+
+  describe(`When running in environments with custom 'fetch' based on 'node-fetch'`, () => {
+    beforeAll(() => {
+      vi.stubGlobal('fetch', nodeFetch);
+    });
+
+    it('Then it should fallback to FormData uploads since ReadableStream is not supported', async () => {
+      const resource = await client.uploadFile(file1);
+
+      await assertFileExist(client.resolve(resource.uri));
+      expect(resource).toBeDefined();
     });
   });
 });
