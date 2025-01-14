@@ -95,7 +95,7 @@ async function detectStreamSupport(): Promise<boolean> {
       },
     });
 
-    const request = new Request('about:blank', {
+    const request = new Request('data:text/plain;charset=utf-8,42', {
       method: 'POST',
       body: testStream,
       // Required for streaming request body in some browsers,
@@ -103,10 +103,14 @@ async function detectStreamSupport(): Promise<boolean> {
       // @ts-ignore
       duplex: 'half',
     });
-    const body = await request.text();
 
-    // if something [object ReadableStream], then not supported
-    return body === '\x00' || body === '[object ReadableStream]';
+    // If fails to handle fetch(Request), it's likely not a native implementation of
+    // Fetch API, so it's not supported.
+    await fetch(request.clone());
+
+    const body = await request.text();
+    // if different from '\x00', it's likely not supported
+    return body === '\x00';
   } catch {
     return false;
   }
