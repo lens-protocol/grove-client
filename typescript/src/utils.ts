@@ -254,7 +254,7 @@ export class MultipartEntriesBuilder {
   private idx = 0;
   private entries: MultipartEntry[] = [];
 
-  private constructor(private readonly allocations: readonly Resource[]) { }
+  private constructor(private readonly allocations: readonly Resource[]) {}
 
   static from(allocations: readonly Resource[]): MultipartEntriesBuilder {
     return new MultipartEntriesBuilder(allocations);
@@ -287,10 +287,10 @@ export class MultipartEntriesBuilder {
       index instanceof File
         ? index
         : createIndexFile(
-          index === true
-            ? createDefaultIndexContent(this.allocations)
-            : index.call(null, this.allocations.slice()), // shallow copy
-        );
+            index === true
+              ? createDefaultIndexContent(this.allocations)
+              : index.call(null, this.allocations.slice()), // shallow copy
+          );
 
     invariant(file.name === 'index.json', "Index file must be named 'index.json'");
 
