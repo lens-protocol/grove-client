@@ -126,6 +126,35 @@ function createFormData(entries: readonly MultipartEntry[]): FormData {
   return formData;
 }
 
+function computeMultipartSize(entries: readonly MultipartEntry[], boundary: string): number {
+  let size = 0;
+  const encoder = new TextEncoder();
+
+  for (const { name, file } of entries) {
+    // Each part starts with the boundary
+    size += encoder.encode(`--${boundary}\r\n`).length;
+
+    // Content-Disposition header
+    size += encoder.encode(
+      `Content-Disposition: form-data; name="${name}"; filename="${file.name}"\r\n`,
+    ).length;
+
+    // Content-Type header
+    size += encoder.encode(`Content-Type: ${file.type}\r\n\r\n`).length;
+
+    // File content size
+    size += file.size;
+
+    // CRLF after file content
+    size += encoder.encode('\r\n').length;
+  }
+
+  // Final boundary
+  size += encoder.encode(`--${boundary}--\r\n`).length;
+
+  return size;
+}
+
 /**
  * Creates a multipart/form-data RequestInit object from a list of entries.
  *
@@ -142,6 +171,7 @@ export async function createMultipartRequestInit(
       method,
       headers: {
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': computeMultipartSize(entries, boundary).toString(),
       },
       body: stream,
       // @ts-ignore
@@ -206,7 +236,7 @@ function createAclTemplateContent(
       return {
         template: acl.template,
         contract_address: acl.contractAddress,
-        chain_id: env.chainId,
+        chain_id: env.defaultChainId,
         network_type: 'evm',
         function_sig: acl.functionSig,
         params: acl.params,

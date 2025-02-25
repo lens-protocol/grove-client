@@ -1,4 +1,4 @@
-# @lens-protocol/storage-node-client
+# @lens-chain/storage-client
 
 ## 0.0.2
 

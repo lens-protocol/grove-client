@@ -12,21 +12,21 @@ The official Lens Storage Node client for JavaScript, TypeScript, and Node.js.
 ## Quick Start
 
 ```bash
-pnpm add @lens-protocol/storage-node-client
+pnpm add @lens-chain/storage-client
 
 # or
 
-npm install @lens-protocol/storage-node-client
+npm install @lens-chain/storage-client
 
 # or
 
-yarn add @lens-protocol/storage-node-client
+yarn add @lens-chain/storage-client
 ```
 
 Create an instance of the `StorageClient`:
 
 ```ts
-import { StorageClient, testnet } from "@lens-protocol/storage-node-client";
+import { StorageClient, testnet } from "@lens-chain/storage-client";
 
 const storageClient = StorageClient.create(testnet);
 ```
@@ -35,7 +35,7 @@ Assuming you have a signer instance that satisfies the `Signer` interface.
 
 ```ts
 interface Signer {
-   signMessage({ message }): Promise<string>;
+  signMessage({ message }): Promise<string>;
 }
 ```
 
@@ -86,7 +86,7 @@ const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file, {
 Upload an arbitrary JS Object as JSON file:
 
 ```ts
-const obj = { key: 'value' };
+const obj = { key: "value" };
 
 const { uri, storageKey, gatewayUrl } = await storageClient.uploadAsJson(obj);
 

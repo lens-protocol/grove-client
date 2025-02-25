@@ -1,5 +1,5 @@
 ---
-"@lens-protocol/storage-node-client": minor
+"@lens-chain/storage-client": minor
 ---
 
 **feat:** introduces `StorageClient#uploadAsJson` convenience method.

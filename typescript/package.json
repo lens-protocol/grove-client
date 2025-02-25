@@ -1,5 +1,5 @@
 {
-  "name": "@lens-protocol/storage-node-client",
+  "name": "@lens-chain/storage-client",
   "version": "0.0.2",
   "description": "The easiest way to store data on Lens Storage Nodes.",
   "type": "module",
@@ -7,8 +7,15 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "sideEffects": false,
-  "files": ["dist"],
-  "keywords": ["lens", "storage", "node"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "lens",
+    "chain",
+    "storage",
+    "node"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -17,8 +24,12 @@
   },
   "typesVersions": {
     "*": {
-      "import": ["./dist/index.d.ts"],
-      "require": ["./dist/index.d.cts"]
+      "import": [
+        "./dist/index.d.ts"
+      ],
+      "require": [
+        "./dist/index.d.cts"
+      ]
     }
   },
   "scripts": {

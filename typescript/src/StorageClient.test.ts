@@ -1,8 +1,9 @@
 import nodeFetch from 'node-fetch';
 import { privateKeyToAccount } from 'viem/accounts';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+
 import { StorageClient } from './StorageClient';
-import { testnet } from './environments';
+import { staging } from './environments';
 import type { Resource } from './types';
 import { lensAccountOnly, never, walletOnly } from './utils';
 
@@ -22,7 +23,7 @@ async function assertFileExist(url: string) {
 }
 
 describe(`Given an instance of the '${StorageClient.name}'`, () => {
-  const client = StorageClient.create(testnet);
+  const client = StorageClient.create(staging);
 
   describe('When testing single file uploads', () => {
     it('Then it should create the expected resource', async () => {
@@ -105,7 +106,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it('Then it should allow editing according to the specified ACL', async () => {
       const acl = lensAccountOnly(import.meta.env.ACCOUNT);
       const resource = await client.uploadFile(file1, { acl });
-
+      // await new Promise((resolve) => setTimeout(resolve, 9000));
       await expect(client.editFile(resource.uri, file2, signer, { acl })).resolves.toBe(true);
     });
   });
