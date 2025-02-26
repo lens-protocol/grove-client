@@ -17,9 +17,9 @@
     <!-- Container to display image previews -->
 
     <script type="module">
-      import { StorageClient, testnet } from "@lens-chain/storage-client";
+      import { StorageClient, staging } from "@lens-chain/storage-client";
 
-      const storage = StorageClient.create(testnet);
+      const storage = StorageClient.create(staging);
 
       const form = document.getElementById("upload-form");
       const imageContainer = document.getElementById("image-container");

@@ -4,10 +4,11 @@ The official Lens Storage Node client for JavaScript, TypeScript, and Node.js.
 
 ## Table of Contents <!-- omit in toc -->
 
-- [Quick Start](#quick-start)
-- [Development Workflow](#development-workflow)
-- [Contributing](#contributing)
-- [License](#license)
+- [Lens Storage Node Client](#lens-storage-node-client)
+  - [Quick Start](#quick-start)
+  - [Development Workflow](#development-workflow)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Quick Start
 
@@ -26,9 +27,9 @@ yarn add @lens-chain/storage-client
 Create an instance of the `StorageClient`:
 
 ```ts
-import { StorageClient, testnet } from "@lens-chain/storage-client";
+import { StorageClient, staging } from "@lens-chain/storage-client";
 
-const storageClient = StorageClient.create(testnet);
+const storageClient = StorageClient.create(staging);
 ```
 
 Assuming you have a signer instance that satisfies the `Signer` interface.
