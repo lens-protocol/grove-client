@@ -17,7 +17,7 @@ export const production: EnvironmentConfig = {
 };
 
 /**
- * The staging environment configuration.
+ * @internal
  */
 export const staging: EnvironmentConfig = {
   name: 'staging',

@@ -1,5 +1,5 @@
 import { type Authorization, AuthorizationService } from './AuthorizationService';
-import type { EnvironmentConfig } from './environments';
+import { production, type EnvironmentConfig } from './environments';
 import { StorageClientError } from './errors';
 import type {
   EditFileOptions,
@@ -33,7 +33,7 @@ export class StorageClient {
    * @param env - the environment configuration
    * @returns The `Storage` client instance
    */
-  static create(env: EnvironmentConfig): StorageClient {
+  static create(env: EnvironmentConfig = production): StorageClient {
     return new StorageClient(env);
   }
 

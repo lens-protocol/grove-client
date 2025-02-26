@@ -27,9 +27,9 @@ yarn add @lens-chain/storage-client
 Create an instance of the `StorageClient`:
 
 ```ts
-import { StorageClient, staging } from "@lens-chain/storage-client";
+import { StorageClient } from "@lens-chain/storage-client";
 
-const storageClient = StorageClient.create(staging);
+const storageClient = StorageClient.create();
 ```
 
 Assuming you have a signer instance that satisfies the `Signer` interface.
@@ -40,7 +40,8 @@ interface Signer {
 }
 ```
 
-> [!TIP] > [Viem](https://viem.sh/)'s `WalletClient` class satisfies the `Signer` interface.
+> [!TIP]
+> [Viem](https://viem.sh/)'s `WalletClient` class satisfies the `Signer` interface.
 
 Upload a file:
 
