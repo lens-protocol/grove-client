@@ -208,17 +208,6 @@ export function resourceFrom(storageKey: string, env: EnvironmentConfig): Resour
   };
 }
 
-/**
- * @internal
- */
-export function parseResource(data: Record<string, string>): Resource {
-  return {
-    storageKey: data.storage_key ?? never('Missing storage key'),
-    gatewayUrl: data.gateway_url ?? never('Missing gateway URL'),
-    uri: data.uri ?? never('Missing URI'),
-  };
-}
-
 function createAclTemplateContent(
   acl: AclTemplate,
   env: EnvironmentConfig,

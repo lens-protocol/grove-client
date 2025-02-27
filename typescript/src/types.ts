@@ -17,6 +17,7 @@ export type ImmutableAclTemplate = {
 export type LensAccountAclTemplate = {
   template: 'lens_account';
   lensAccount: EvmAddress;
+  chainId: number;
 };
 
 export type WalletAddressAclTemplate = {

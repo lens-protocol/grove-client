@@ -32,102 +32,14 @@ import { StorageClient } from "@lens-chain/storage-client";
 const storageClient = StorageClient.create();
 ```
 
-Assuming you have a signer instance that satisfies the `Signer` interface.
-
-```ts
-interface Signer {
-  signMessage({ message }): Promise<string>;
-}
-```
-
-> [!TIP]
-> [Viem](https://viem.sh/)'s `WalletClient` class satisfies the `Signer` interface.
-
 Upload a file:
 
 ```ts
-const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file:File);
+const file: File = // …
 
-console.log(uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
-```
+const resource = await storageClient.uploadFile(file);
 
-Upload a mutable file:
-
-```ts
-const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file:File, { mutable: true });
-```
-
-Use the `lens_account` ACL template:
-
-```ts
-const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file:File, {
-   acl: {
-      template: 'lens_account',
-      lensAccount: '0x1234567890abcdef1234567890abcdef12345678'
-   }
-});
-```
-
-Use the `generic_acl` ACL template:
-
-```ts
-const file: File = ...
-
-const { uri, storageKey, gatewayUrl } = await storageClient.uploadFile(file, {
-   acl: {
-      template: 'generic_acl',
-      contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
-      chainId: 1,
-      networkType: 'evm',
-      functionSig: '0x12345678',
-      params: [1, 2, 3]
-   }
-});
-```
-
-Upload an arbitrary JS Object as JSON file:
-
-```ts
-const obj = { key: "value" };
-
-const { uri, storageKey, gatewayUrl } = await storageClient.uploadAsJson(obj);
-
-console.log(uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
-```
-
-Upload a folder:
-
-```ts
-const files: FileList = ...
-
-const {
-   files,   // [ { uri, storageKey, gatewayUrl } ],
-   folder   // { uri, storageKey, gatewayUrl }
-} = await storageClient.uploadFolder(files);
-
-console.log(folder.uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
-console.log(files[0].uri); // lens://b53d9c4ea2acbadc00b9d0fc61bafa6ba1bf161dade9ac465667f5…
-```
-
-Delete a file or folder:
-
-```ts
-const success = await storageClient.delete(
-  "lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…",
-  walletClient
-);
-
-console.log(success); // true
-```
-
-Edit a file:
-
-```ts
-const file: File = ...
-
-const success = await storageClient.editFile('lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…', file, walletClient);
-
-console.log(success); // true
+console.log(resource.uri); // lens://3552f3b6403e06ac89eba06b9f41ad82fd5dfb95c57d35b9446767…
 ```
 
 ## Development Workflow

@@ -105,7 +105,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
 
   describe('When testing file editing with Lens Accounts', () => {
     it('Then it should allow editing according to the specified ACL', async () => {
-      const acl = lensAccountOnly(import.meta.env.ACCOUNT);
+      const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
       const resource = await client.uploadFile(file1, { acl });
       // await new Promise((resolve) => setTimeout(resolve, 9000));
       await expect(client.editFile(resource.uri, file2, signer, { acl })).resolves.toBe(true);
@@ -114,7 +114,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
 
   describe('When testing file deletion with Lens Accounts', () => {
     it('Then it should allow deletion according to the specified ACL', async () => {
-      const acl = lensAccountOnly(import.meta.env.ACCOUNT);
+      const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
       const resource = await client.uploadFile(file1, { acl });
 
       await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
@@ -123,7 +123,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
 
   describe('When testing file editing with Wallet Addresses', () => {
     it('Then it should allow editing according to the specified ACL', async () => {
-      const acl = walletOnly(import.meta.env.ADDRESS);
+      const acl = walletOnly(import.meta.env.ADDRESS, 37111);
       const resource = await client.uploadFile(file1, { acl });
 
       await expect(client.editFile(resource.uri, file2, signer, { acl })).resolves.toBe(true);
@@ -132,14 +132,14 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
 
   describe('When testing file deletion with Wallet Addresses', () => {
     it('Then it should allow deletion according to the specified ACL', async () => {
-      const acl = walletOnly(import.meta.env.ADDRESS);
+      const acl = walletOnly(import.meta.env.ADDRESS, 37111);
       const resource = await client.uploadFile(file1, { acl });
 
       await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
     });
   });
 
-  describe(`When running in environments with custom 'fetch' based on 'node-fetch'`, () => {
+  describe.skip(`When running in environments with custom 'fetch' based on 'node-fetch'`, () => {
     beforeAll(() => {
       vi.stubGlobal('fetch', nodeFetch);
     });

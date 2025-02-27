@@ -231,7 +231,7 @@ export class StorageClient {
     url: string,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    const response = fetch(url, await createMultipartRequestInit(method, entries));
+    const response = await fetch(url, await createMultipartRequestInit(method, entries));
 
     // quick patch for clouflare propagation issue, will be removed soon.
     await new Promise((resolve) => setTimeout(resolve, 100));
