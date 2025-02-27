@@ -208,17 +208,13 @@ export function resourceFrom(storageKey: string, env: EnvironmentConfig): Resour
   };
 }
 
-function createAclTemplateContent(
-  acl: AclTemplate,
-  env: EnvironmentConfig,
-): Record<string, unknown> {
+function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
   switch (acl.template) {
     case 'generic_acl':
       return {
         template: acl.template,
         contract_address: acl.contractAddress,
-        // TODO use acl.chainId once supported by the API
-        chain_id: env.defaultChainId,
+        chain_id: acl.chainId,
         network_type: 'evm',
         function_sig: acl.functionSig,
         params: acl.params,
@@ -227,11 +223,13 @@ function createAclTemplateContent(
       return {
         template: acl.template,
         lens_account: acl.lensAccount,
+        chain_id: acl.chainId,
       };
     case 'wallet_address':
       return {
         template: acl.template,
         wallet_address: acl.walletAddress,
+        chain_id: acl.chainId,
       };
     case 'immutable':
       return {
@@ -244,9 +242,9 @@ function createAclTemplateContent(
   }
 }
 
-function createAclEntry(template: AclTemplate, env: EnvironmentConfig): MultipartEntry {
+function createAclEntry(template: AclTemplate): MultipartEntry {
   const name = 'lens-acl.json';
-  const content = createAclTemplateContent(template, env);
+  const content = createAclTemplateContent(template);
 
   return {
     name,
@@ -298,8 +296,8 @@ export class MultipartEntriesBuilder {
     return this;
   }
 
-  withAclTemplate(template: AclTemplate, env: EnvironmentConfig): MultipartEntriesBuilder {
-    this.entries.push(createAclEntry(template, env));
+  withAclTemplate(template: AclTemplate): MultipartEntriesBuilder {
+    this.entries.push(createAclEntry(template));
     return this;
   }
 

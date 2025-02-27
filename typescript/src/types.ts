@@ -97,3 +97,12 @@ export type UploadFolderResponse = {
   files: Resource[];
   folder: Resource;
 };
+
+/**
+ * @internal
+ */
+export type Status = {
+  storageKey: string;
+  status: string;
+  progress: number;
+};

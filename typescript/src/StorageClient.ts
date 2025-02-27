@@ -8,6 +8,7 @@ import type {
   EditFileOptions,
   Resource,
   Signer,
+  Status,
   UploadFileOptions,
   UploadFolderOptions,
   UploadFolderResponse,
@@ -50,13 +51,12 @@ export class StorageClient {
    */
   async uploadFile(file: File, options: UploadFileOptions = {}): Promise<Resource> {
     const [resource] = await this.allocateStorage(1);
-    const builder = MultipartEntriesBuilder.from([resource])
-      .withFile(file)
-      .withAclTemplate(this.resolveAcl(options), this.env);
+    const acl = this.resolveAcl(options);
+    const builder = MultipartEntriesBuilder.from([resource]).withFile(file).withAclTemplate(acl);
 
     const entries = builder.build();
 
-    const response = await this.create(resource.storageKey, entries);
+    const response = await this.create(resource.storageKey, entries, acl.chainId);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
@@ -110,10 +110,11 @@ export class StorageClient {
       builder.withIndexFile(options.index);
     }
 
-    builder.withAclTemplate(this.resolveAcl(options), this.env);
+    const acl = this.resolveAcl(options);
+    builder.withAclTemplate(acl);
 
     const entries = builder.build();
-    const response = await this.create(folderResource.storageKey, entries);
+    const response = await this.create(folderResource.storageKey, entries, acl.chainId);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
@@ -180,12 +181,22 @@ export class StorageClient {
 
     const builder = MultipartEntriesBuilder.from([resourceFrom(storageKey, this.env)])
       .withFile(newFile)
-      .withAclTemplate(this.resolveAcl(options), this.env);
+      .withAclTemplate(this.resolveAcl(options));
 
     const entries = builder.build();
     const response = await this.update(storageKey, authorization, entries);
 
     return response.ok;
+  }
+
+  /**
+   * @experimental
+   */
+  async status(storageKeyOrUri: string): Promise<Status> {
+    const storageKey = extractStorageKey(storageKeyOrUri);
+    const response = await fetch(`${this.env.backend}/status/${storageKey}`);
+    const data = await response.json();
+    return data;
   }
 
   private async allocateStorage(amount: number): Promise<[Resource, ...Resource[]]> {
@@ -210,8 +221,16 @@ export class StorageClient {
     });
   }
 
-  private async create(storageKey: string, entries: readonly MultipartEntry[]): Promise<Response> {
-    return this.multipartRequest('POST', `${this.env.backend}/${storageKey}`, entries);
+  private async create(
+    storageKey: string,
+    entries: readonly MultipartEntry[],
+    chainIdPatch: number, // TODO remove once ACLs are fixed
+  ): Promise<Response> {
+    return this.multipartRequest(
+      'POST',
+      `${this.env.backend}/${storageKey}?chain_id=${chainIdPatch}`,
+      entries,
+    );
   }
 
   private async update(
