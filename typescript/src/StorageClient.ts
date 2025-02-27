@@ -19,7 +19,7 @@ import {
   createMultipartRequestInit,
   extractStorageKey,
   invariant,
-  parseResource,
+  never,
   resourceFrom,
 } from './utils';
 
@@ -197,9 +197,17 @@ export class StorageClient {
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
     }
-
     const data = await response.json();
-    return data.map(parseResource);
+    return data.map((data: Record<string, string>): Resource => {
+      const storageKey = data.storage_key ?? never('Missing storage key');
+      return {
+        storageKey,
+        // TODO use data.gateway_url once fixed by the API
+        // gatewayUrl: data.gateway_url ?? never('Missing gateway URL'),
+        gatewayUrl: this.resolve(storageKey),
+        uri: data.uri ?? never('Missing URI'),
+      };
+    });
   }
 
   private async create(storageKey: string, entries: readonly MultipartEntry[]): Promise<Response> {
