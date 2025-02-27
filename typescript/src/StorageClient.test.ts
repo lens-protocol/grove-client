@@ -3,8 +3,10 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { StorageClient } from './StorageClient';
+import { lensAccountOnly, walletOnly } from './builders';
+import { staging } from './environments';
 import type { Resource } from './types';
-import { lensAccountOnly, never, walletOnly } from './utils';
+import { never } from './utils';
 
 const signer = privateKeyToAccount(import.meta.env.PRIVATE_KEY);
 const file1 = new File(['This is a test file.'], 'test.txt', {
@@ -22,7 +24,7 @@ async function assertFileExist(url: string) {
 }
 
 describe(`Given an instance of the '${StorageClient.name}'`, () => {
-  const client = StorageClient.create();
+  const client = StorageClient.create(staging);
 
   describe('When testing single file uploads', () => {
     it('Then it should create the expected resource', async () => {

@@ -1,7 +1,10 @@
 import { type Authorization, AuthorizationService } from './AuthorizationService';
+import { immutable } from './builders';
 import { type EnvironmentConfig, production } from './environments';
 import { StorageClientError } from './errors';
 import type {
+  AccessOptions,
+  AclTemplate,
   EditFileOptions,
   Resource,
   Signer,
@@ -47,11 +50,9 @@ export class StorageClient {
    */
   async uploadFile(file: File, options: UploadFileOptions = {}): Promise<Resource> {
     const [resource] = await this.allocateStorage(1);
-    const builder = MultipartEntriesBuilder.from([resource]).withFile(file);
-
-    if (options.acl) {
-      builder.withAclTemplate(options.acl, this.env);
-    }
+    const builder = MultipartEntriesBuilder.from([resource])
+      .withFile(file)
+      .withAclTemplate(this.resolveAcl(options), this.env);
 
     const entries = builder.build();
 
@@ -73,7 +74,6 @@ export class StorageClient {
    *
    * const { uri } = await client.uploadFile(file);
    * ```
-   *
    *
    * @throws {@link StorageClientError} if uploading the JSON fails
    * @param json - The JSON object to upload
@@ -110,9 +110,7 @@ export class StorageClient {
       builder.withIndexFile(options.index);
     }
 
-    if (options.acl) {
-      builder.withAclTemplate(options.acl, this.env);
-    }
+    builder.withAclTemplate(this.resolveAcl(options), this.env);
 
     const entries = builder.build();
     const response = await this.create(folderResource.storageKey, entries);
@@ -180,13 +178,9 @@ export class StorageClient {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const authorization = await this.authorization.authorize('edit', storageKey, signer);
 
-    const builder = MultipartEntriesBuilder.from([resourceFrom(storageKey, this.env)]).withFile(
-      newFile,
-    );
-
-    if (options.acl) {
-      builder.withAclTemplate(options.acl, this.env);
-    }
+    const builder = MultipartEntriesBuilder.from([resourceFrom(storageKey, this.env)])
+      .withFile(newFile)
+      .withAclTemplate(this.resolveAcl(options), this.env);
 
     const entries = builder.build();
     const response = await this.update(storageKey, authorization, entries);
@@ -234,5 +228,9 @@ export class StorageClient {
     // quick patch for clouflare propagation issue, will be removed soon.
     await new Promise((resolve) => setTimeout(resolve, 100));
     return response;
+  }
+
+  private resolveAcl<T extends AccessOptions>(options: T): AclTemplate {
+    return options.acl ?? immutable(this.env.defaultChainId);
   }
 }

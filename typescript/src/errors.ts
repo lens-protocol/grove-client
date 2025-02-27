@@ -3,10 +3,10 @@ class BaseError extends Error {
     try {
       const { message } = await response.clone().json();
 
-      // biome-ignore lint/complexity/noThisInStatic: <explanation>
+      // biome-ignore lint/complexity/noThisInStatic: need this to create the correct error type
       return new this(message);
     } catch (error) {
-      // biome-ignore lint/complexity/noThisInStatic: <explanation>
+      // biome-ignore lint/complexity/noThisInStatic: need this to create the correct error type
       return new this(await response.text());
     }
   }

@@ -1,5 +1,19 @@
 export type EvmAddress = `0x${string}`;
 
+export type GenericAclTemplate = {
+  template: 'generic_acl';
+  chainId: number;
+  contractAddress: string;
+  functionSig: string;
+  // biome-ignore lint/suspicious/noExplicitAny: keep it simple
+  params: any[];
+};
+
+export type ImmutableAclTemplate = {
+  template: 'immutable';
+  chainId: number;
+};
+
 export type LensAccountAclTemplate = {
   template: 'lens_account';
   lensAccount: EvmAddress;
@@ -8,17 +22,14 @@ export type LensAccountAclTemplate = {
 export type WalletAddressAclTemplate = {
   template: 'wallet_address';
   walletAddress: EvmAddress;
+  chainId: number;
 };
 
-export type GenericAclTemplate = {
-  template: 'generic_acl';
-  contractAddress: string;
-  functionSig: string;
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  params: any[];
-};
-
-export type AclTemplate = LensAccountAclTemplate | WalletAddressAclTemplate | GenericAclTemplate;
+export type AclTemplate =
+  | GenericAclTemplate
+  | ImmutableAclTemplate
+  | LensAccountAclTemplate
+  | WalletAddressAclTemplate;
 
 export interface Signer {
   signMessage({ message }: { message: string }): Promise<string>;
@@ -28,7 +39,7 @@ export type AccessOptions = {
   /**
    * The ACL template to use for the resource.
    *
-   * @defaultValue if not provided the resource will be immutable
+   * @defaultValue {@link ImmutableAclTemplate} bound to the Lens Chain ID
    */
   acl?: AclTemplate;
 };
