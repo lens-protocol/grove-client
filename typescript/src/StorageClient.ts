@@ -1,5 +1,5 @@
 import { type Authorization, AuthorizationService } from './AuthorizationService';
-import { production, type EnvironmentConfig } from './environments';
+import { type EnvironmentConfig, production } from './environments';
 import { StorageClientError } from './errors';
 import type {
   EditFileOptions,
@@ -229,6 +229,10 @@ export class StorageClient {
     url: string,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    return fetch(url, await createMultipartRequestInit(method, entries));
+    const response = fetch(url, await createMultipartRequestInit(method, entries));
+
+    // quick patch for clouflare propagation issue, will be removed soon.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return response;
   }
 }
