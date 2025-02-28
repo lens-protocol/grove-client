@@ -2,17 +2,18 @@ import { type Authorization, AuthorizationService } from './AuthorizationService
 import { immutable } from './builders';
 import { type EnvironmentConfig, production } from './environments';
 import { StorageClientError } from './errors';
-import type {
-  AccessOptions,
-  AclTemplate,
-  EditFileOptions,
-  Resource,
-  Signer,
-  Status,
-  UploadFileOptions,
-  UploadFolderOptions,
-  UploadFolderResponse,
-  UploadJsonOptions,
+import {
+  type AccessOptions,
+  type AclTemplate,
+  type EditFileOptions,
+  FileUploadResponse,
+  type Resource,
+  type Signer,
+  type Status,
+  type UploadFileOptions,
+  type UploadFolderOptions,
+  type UploadFolderResponse,
+  type UploadJsonOptions,
 } from './types';
 import {
   MultipartEntriesBuilder,
@@ -22,12 +23,13 @@ import {
   invariant,
   never,
   resourceFrom,
+  statusFrom,
 } from './utils';
 
 export class StorageClient {
   private readonly authorization: AuthorizationService;
 
-  private constructor(private readonly env: EnvironmentConfig) {
+  private constructor(public readonly env: EnvironmentConfig) {
     this.authorization = new AuthorizationService(env);
   }
 
@@ -49,7 +51,7 @@ export class StorageClient {
    * @param options - Any additional options for the upload
    * @returns The {@link Resource} to the uploaded file
    */
-  async uploadFile(file: File, options: UploadFileOptions = {}): Promise<Resource> {
+  async uploadFile(file: File, options: UploadFileOptions = {}): Promise<FileUploadResponse> {
     const [resource] = await this.allocateStorage(1);
     const acl = this.resolveAcl(options);
     const builder = MultipartEntriesBuilder.from([resource]).withFile(file).withAclTemplate(acl);
@@ -62,7 +64,7 @@ export class StorageClient {
       throw await StorageClientError.fromResponse(response);
     }
 
-    return resource;
+    return new FileUploadResponse(resource, this);
   }
 
   /**
@@ -156,7 +158,6 @@ export class StorageClient {
         method: 'DELETE',
       },
     );
-
     return response.ok;
   }
 
@@ -179,12 +180,13 @@ export class StorageClient {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const authorization = await this.authorization.authorize('edit', storageKey, signer);
 
+    const acl = this.resolveAcl(options);
     const builder = MultipartEntriesBuilder.from([resourceFrom(storageKey, this.env)])
       .withFile(newFile)
-      .withAclTemplate(this.resolveAcl(options));
+      .withAclTemplate(acl);
 
     const entries = builder.build();
-    const response = await this.update(storageKey, authorization, entries);
+    const response = await this.update(storageKey, authorization, entries, acl.chainId);
 
     return response.ok;
   }
@@ -195,8 +197,16 @@ export class StorageClient {
   async status(storageKeyOrUri: string): Promise<Status> {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const response = await fetch(`${this.env.backend}/status/${storageKey}`);
-    const data = await response.json();
-    return data;
+
+    if (!response.ok) {
+      throw await StorageClientError.fromResponse(response);
+    }
+    try {
+      const data = await response.json();
+      return statusFrom(data);
+    } catch (error) {
+      throw await StorageClientError.fromResponse(response);
+    }
   }
 
   private async allocateStorage(amount: number): Promise<[Resource, ...Resource[]]> {
@@ -237,10 +247,11 @@ export class StorageClient {
     storageKey: string,
     authorization: Authorization,
     entries: readonly MultipartEntry[],
+    chainIdPatch: number, // TODO remove once ACLs are fixed
   ): Promise<Response> {
     return this.multipartRequest(
       'PUT',
-      `${this.env.backend}/${storageKey}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
+      `${this.env.backend}/${storageKey}?chain_id=${chainIdPatch}&challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
       entries,
     );
   }
@@ -250,11 +261,7 @@ export class StorageClient {
     url: string,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    const response = await fetch(url, await createMultipartRequestInit(method, entries));
-
-    // quick patch for clouflare propagation issue, will be removed soon.
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return response;
+    return fetch(url, await createMultipartRequestInit(method, entries));
   }
 
   private resolveAcl<T extends AccessOptions>(options: T): AclTemplate {

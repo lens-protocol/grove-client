@@ -10,6 +10,28 @@ class BaseError extends Error {
       return new this(await response.text());
     }
   }
+
+  static from(args: unknown) {
+    if (args instanceof Error) {
+      const message = BaseError.formatMessage(args);
+      // biome-ignore lint/complexity/noThisInStatic: need this to create the correct error type
+      return new this(message, { cause: args });
+    }
+    // biome-ignore lint/complexity/noThisInStatic: need this to create the correct error type
+    return new this(String(args));
+  }
+
+  private static formatMessage(cause: Error): string {
+    const messages: string[] = [];
+    let currentError: unknown = cause;
+
+    while (currentError instanceof Error) {
+      messages.push(currentError.message);
+      currentError = currentError.cause;
+    }
+
+    return messages.join(' due to ');
+  }
 }
 
 export class AuthorizationError extends BaseError {

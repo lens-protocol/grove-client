@@ -1,6 +1,6 @@
 import type { EnvironmentConfig } from './environments';
 import { InvariantError } from './errors';
-import type { AclTemplate, CreateIndexContent, Resource } from './types';
+import type { AclTemplate, CreateIndexContent, Resource, Status } from './types';
 
 /**
  * Asserts that the given condition is truthy
@@ -20,6 +20,13 @@ export function invariant(condition: unknown, message: string): asserts conditio
  */
 export function never(message = 'Unexpected call to never()'): never {
   throw new InvariantError(message);
+}
+
+/**
+ * @internal
+ */
+export function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -205,6 +212,17 @@ export function resourceFrom(storageKey: string, env: EnvironmentConfig): Resour
     storageKey,
     gatewayUrl: `${env.backend}/${storageKey}`,
     uri: `${LENS_SCHEME}://${storageKey}`,
+  };
+}
+
+/**
+ * @internal
+ */
+export function statusFrom(data: Record<string, unknown>): Status {
+  return {
+    status: data.status as Status['status'],
+    storageKey: data.storage_key as string,
+    progress: data.progress as number,
   };
 }
 

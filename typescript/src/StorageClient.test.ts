@@ -27,20 +27,20 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
   const client = StorageClient.create(staging);
 
   describe('When testing single file uploads', () => {
-    it('Then it should create the expected resource', async () => {
-      const resource = await client.uploadFile(file1);
+    it('Then it should create the expected response', async () => {
+      const response = await client.uploadFile(file1);
 
-      await assertFileExist(client.resolve(resource.uri));
-      expect(resource).toBeDefined();
+      await assertFileExist(client.resolve(response.uri));
+      expect(response).toBeDefined();
     });
   });
 
   describe('When testing a JS Object upload', () => {
-    it('Then it should create the expected resource', async () => {
-      const resource = await client.uploadAsJson({ test: 'test' });
+    it('Then it should create the expected response', async () => {
+      const response = await client.uploadAsJson({ test: 'test' });
 
-      await assertFileExist(client.resolve(resource.uri));
-      expect(resource).toBeDefined();
+      await assertFileExist(client.resolve(response.uri));
+      expect(response).toBeDefined();
     });
   });
 
@@ -54,13 +54,13 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     });
 
     it('Then it should support default directory listing', async () => {
-      const resource = await client.uploadFolder(files, {
+      const response = await client.uploadFolder(files, {
         index: true,
       });
 
-      const url = client.resolve(resource.folder.uri);
-      const response = await fetch(url);
-      const json = await response.json();
+      const url = client.resolve(response.folder.uri);
+      const res = await fetch(url);
+      const json = await res.json();
       expect(json).toMatchObject({
         files: expect.arrayContaining([expect.any(String), expect.any(String), expect.any(String)]),
       });
@@ -69,23 +69,23 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it('Then it should support using an arbitrary index file', async () => {
       const index = new File(['[]'], 'index.json', { type: 'text/plain' });
 
-      const resource = await client.uploadFolder(files, { index });
+      const response = await client.uploadFolder(files, { index });
 
-      const url = client.resolve(resource.folder.uri);
-      const response = await fetch(url);
-      const json = await response.json();
+      const url = client.resolve(response.folder.uri);
+      const res = await fetch(url);
+      const json = await res.json();
       expect(json).toMatchObject([]);
     });
 
-    it('Then it should support and index file factory', async () => {
+    it('Then it should support an index file factory', async () => {
       const indexFactory = (resources: Resource[]) => resources.map((r) => r.uri);
-      const resource = await client.uploadFolder(files, {
+      const response = await client.uploadFolder(files, {
         index: indexFactory,
       });
 
-      const url = client.resolve(resource.folder.uri);
-      const response = await fetch(url);
-      const json = await response.json();
+      const url = client.resolve(response.folder.uri);
+      const res = await fetch(url);
+      const json = await res.json();
       expect(json).toMatchObject(expect.arrayContaining([expect.stringContaining('lens://')]));
     });
 
@@ -94,48 +94,64 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const index = new File([JSON.stringify(content)], 'index.json', {
         type: 'application/json',
       });
-      const resource = await client.uploadFolder(files, { index });
+      const response = await client.uploadFolder(files, { index });
 
-      const url = client.resolve(resource.folder.uri);
-      const response = await fetch(url);
-      const json = await response.json();
+      const url = client.resolve(response.folder.uri);
+      const res = await fetch(url);
+      const json = await res.json();
       expect(json).toMatchObject(content);
     });
   });
 
-  describe('When testing file editing with Lens Accounts', () => {
-    it('Then it should allow editing according to the specified ACL', async () => {
-      const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
-      const resource = await client.uploadFile(file1, { acl });
-      // await new Promise((resolve) => setTimeout(resolve, 9000));
-      await expect(client.editFile(resource.uri, file2, signer, { acl })).resolves.toBe(true);
-    });
+  describe.only('When testing file editing with Lens Accounts', () => {
+    it(
+      'Then it should allow editing according to the specified ACL',
+      { timeout: 20000 },
+      async () => {
+        const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
+        const response = await client.uploadFile(file1, { acl });
+
+        await response.waitUntilPersisted();
+        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBe(true);
+      },
+    );
   });
 
-  describe('When testing file deletion with Lens Accounts', () => {
+  describe.only('When testing file deletion with Lens Accounts', () => {
+    it(
+      'Then it should allow deletion according to the specified ACL',
+      { timeout: 20000 },
+      async () => {
+        const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
+        const response = await client.uploadFile(file1, { acl });
+
+        await response.waitUntilPersisted();
+        await expect(client.delete(response.uri, signer)).resolves.toBe(true);
+      },
+    );
+  });
+
+  describe.only('When testing file editing with Wallet Addresses', () => {
+    it(
+      'Then it should allow editing according to the specified ACL',
+      { timeout: 20000 },
+      async () => {
+        const acl = walletOnly(import.meta.env.ADDRESS, 37111);
+        const response = await client.uploadFile(file1, { acl });
+
+        await response.waitUntilPersisted();
+        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBe(true);
+      },
+    );
+  });
+
+  describe.only('When testing file deletion with Wallet Addresses', () => {
     it('Then it should allow deletion according to the specified ACL', async () => {
-      const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
-      const resource = await client.uploadFile(file1, { acl });
-
-      await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
-    });
-  });
-
-  describe('When testing file editing with Wallet Addresses', () => {
-    it('Then it should allow editing according to the specified ACL', async () => {
       const acl = walletOnly(import.meta.env.ADDRESS, 37111);
-      const resource = await client.uploadFile(file1, { acl });
+      const response = await client.uploadFile(file1, { acl });
 
-      await expect(client.editFile(resource.uri, file2, signer, { acl })).resolves.toBe(true);
-    });
-  });
-
-  describe('When testing file deletion with Wallet Addresses', () => {
-    it('Then it should allow deletion according to the specified ACL', async () => {
-      const acl = walletOnly(import.meta.env.ADDRESS, 37111);
-      const resource = await client.uploadFile(file1, { acl });
-
-      await expect(client.delete(resource.uri, signer)).resolves.toBe(true);
+      await response.waitUntilPersisted();
+      await expect(client.delete(response.uri, signer)).resolves.toBe(true);
     });
   });
 
@@ -145,10 +161,10 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     });
 
     it('Then it should fallback to FormData uploads since ReadableStream is not supported', async () => {
-      const resource = await client.uploadFile(file1);
+      const response = await client.uploadFile(file1);
 
-      await assertFileExist(client.resolve(resource.uri));
-      expect(resource).toBeDefined();
+      await assertFileExist(client.resolve(response.uri));
+      expect(response).toBeDefined();
     });
   });
 });
