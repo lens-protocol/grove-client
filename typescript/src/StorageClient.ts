@@ -82,7 +82,7 @@ export class StorageClient {
    * @param options - Any additional options for the upload
    * @returns The {@link Resource} to the uploaded JSON
    */
-  async uploadAsJson(json: unknown, options: UploadJsonOptions = {}): Promise<Resource> {
+  async uploadAsJson(json: unknown, options: UploadJsonOptions = {}): Promise<FileUploadResponse> {
     const file = new File([JSON.stringify(json)], options.name ?? 'data.json', {
       type: 'application/json',
     });
