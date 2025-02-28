@@ -36,6 +36,12 @@ export type AclTemplate =
   | LensAccountAclTemplate
   | WalletAddressAclTemplate;
 
+/**
+ * The marker used to identify the address of the signer attempting
+ * to update or delete a resource.
+ */
+export const RECOVERED_ADDRESS_PARAM_MARKER = '<recovered_address>';
+
 export interface Signer {
   signMessage({ message }: { message: string }): Promise<string>;
 }
@@ -114,6 +120,8 @@ abstract class UploadResponse {
    * Wait until the resource is persisted in long term storage.
    *
    * Edit and delete operations are only allowed after the resource is fully persisted.
+   *
+   * @throws a {@link StorageClientError} if the persistence operation fails or times out
    */
   async waitUntilPersisted(): Promise<void> {
     const startedAt = Date.now();
@@ -134,11 +142,12 @@ abstract class UploadResponse {
               `The resource ${this.resource.storageKey} has returned a '${status}' status.`,
             );
 
-          default: // new, pending, idle
+          default:
             await delay(this.client.env.persistancePollingInterval);
             break;
         }
       } catch (error) {
+        console.log(error);
         throw StorageClientError.from(error);
       }
     }
@@ -170,6 +179,9 @@ export class FileUploadResponse extends UploadResponse {
   }
 }
 
+/**
+ * @internal
+ */
 export type Status = {
   /**
    * The storage key of the resource.
@@ -178,7 +190,15 @@ export type Status = {
   /**
    * The current status.
    */
-  status: 'done' | 'new' | 'unauthorized' | 'error_upload' | 'error_edit' | 'error_delete';
+  status:
+    | 'done'
+    | 'error_delete'
+    | 'error_edit'
+    | 'error_upload'
+    | 'idle'
+    | 'new'
+    | 'pending'
+    | 'unauthorized';
   /**
    * A percentage value between 0-100 indicating the progress of the resource's persistence.
    *

@@ -1,7 +1,7 @@
 import { type Authorization, AuthorizationService } from './AuthorizationService';
 import { immutable } from './builders';
 import { type EnvironmentConfig, production } from './environments';
-import { StorageClientError } from './errors';
+import { AuthorizationError, StorageClientError } from './errors';
 import {
   type AccessOptions,
   type AclTemplate,
@@ -46,10 +46,10 @@ export class StorageClient {
   /**
    * Uploads a file to the storage.
    *
-   * @throws {@link StorageClientError} if uploading the file fails
+   * @throws a {@link StorageClientError} if uploading the file fails
    * @param file - The file to upload
    * @param options - Any additional options for the upload
-   * @returns The {@link Resource} to the uploaded file
+   * @returns The {@link FileUploadResponse} to the uploaded file
    */
   async uploadFile(file: File, options: UploadFileOptions = {}): Promise<FileUploadResponse> {
     const [resource] = await this.allocateStorage(1);
@@ -58,7 +58,7 @@ export class StorageClient {
 
     const entries = builder.build();
 
-    const response = await this.create(resource.storageKey, entries, acl.chainId);
+    const response = await this.create(resource.storageKey, entries);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
@@ -77,10 +77,10 @@ export class StorageClient {
    * const { uri } = await client.uploadFile(file);
    * ```
    *
-   * @throws {@link StorageClientError} if uploading the JSON fails
+   * @throws a {@link StorageClientError} if uploading the JSON fails
    * @param json - The JSON object to upload
-   * @param options - Any additional options for the upload
-   * @returns The {@link Resource} to the uploaded JSON
+   * @param options - Upload options including the ACL configuration
+   * @returns The {@link FileUploadResponse} to the uploaded JSON
    */
   async uploadAsJson(json: unknown, options: UploadJsonOptions = {}): Promise<FileUploadResponse> {
     const file = new File([JSON.stringify(json)], options.name ?? 'data.json', {
@@ -92,9 +92,9 @@ export class StorageClient {
   /**
    * Uploads a folder to the storage.
    *
-   * @throws {@link StorageClientError} if uploading the folder fails
+   * @throws a {@link StorageClientError} if uploading the folder fails
    * @param files - The files to upload
-   * @param options - Any additional options for the upload
+   * @param options - Upload options including the ACL configuration
    * @returns The {@link UploadFolderResponse} to the uploaded folder
    */
   async uploadFolder(
@@ -116,7 +116,7 @@ export class StorageClient {
     builder.withAclTemplate(acl);
 
     const entries = builder.build();
-    const response = await this.create(folderResource.storageKey, entries, acl.chainId);
+    const response = await this.create(folderResource.storageKey, entries);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
@@ -143,7 +143,7 @@ export class StorageClient {
   /**
    * Deletes a resource from the storage.
    *
-   * @throws {@link AuthorizationError} if not authorized to delete the resource
+   * @throws a {@link AuthorizationError} if not authorized to delete the resource
    * @param storageKeyOrUri - The `lens://…` URI or storage key
    * @param signer - The signer to use for the deletion
    * @returns Whether the deletion was successful or not
@@ -162,37 +162,63 @@ export class StorageClient {
   }
 
   /**
+   * Updates a JSON object in the storage.
+   *
+   * @throws a {@link StorageClientError} if editing the file fails
+   * @throws a {@link AuthorizationError} if not authorized to edit the file
+   * @param storageKeyOrUri - The `lens://…` URI or storage key
+   * @param json - The JSON object to upload
+   * @param signer - The signer to use for the edit
+   * @param options - Upload options including the ACL configuration
+   * @returns The {@link FileUploadResponse} to the uploaded JSON
+   */
+  async updateJson(
+    storageKeyOrUri: string,
+    json: unknown,
+    signer: Signer,
+    options: UploadJsonOptions = {},
+  ): Promise<FileUploadResponse> {
+    const file = new File([JSON.stringify(json)], options.name ?? 'data.json', {
+      type: 'application/json',
+    });
+    return this.editFile(storageKeyOrUri, file, signer, options);
+  }
+
+  /**
    * Edits a file in the storage.
    *
-   * @throws {@link StorageClientError} if editing the file fails
-   * @throws {@link AuthorizationError} if not authorized to edit the file
+   * @throws a {@link StorageClientError} if editing the file fails
+   * @throws a {@link AuthorizationError} if not authorized to edit the file
    * @param storageKeyOrUri - The `lens://…` URI or storage key
    * @param newFile - The file to replace the existing file with
    * @param signer - The signer to use for the edit
-   * @param options - Any additional options for the edit
+   * @param options - Upload options including the ACL configuration
    */
   async editFile(
     storageKeyOrUri: string,
     newFile: File,
     signer: Signer,
     options: EditFileOptions = {},
-  ): Promise<boolean> {
+  ): Promise<FileUploadResponse> {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const authorization = await this.authorization.authorize('edit', storageKey, signer);
 
     const acl = this.resolveAcl(options);
-    const builder = MultipartEntriesBuilder.from([resourceFrom(storageKey, this.env)])
-      .withFile(newFile)
-      .withAclTemplate(acl);
+    const resource = resourceFrom(storageKey, this.env);
+    const builder = MultipartEntriesBuilder.from([resource]).withFile(newFile).withAclTemplate(acl);
 
     const entries = builder.build();
-    const response = await this.update(storageKey, authorization, entries, acl.chainId);
+    const response = await this.update(storageKey, authorization, entries);
 
-    return response.ok;
+    if (!response.ok) {
+      throw await StorageClientError.fromResponse(response);
+    }
+
+    return new FileUploadResponse(resource, this);
   }
 
   /**
-   * @experimental
+   * @internal
    */
   async status(storageKeyOrUri: string): Promise<Status> {
     const storageKey = extractStorageKey(storageKeyOrUri);
@@ -231,27 +257,18 @@ export class StorageClient {
     });
   }
 
-  private async create(
-    storageKey: string,
-    entries: readonly MultipartEntry[],
-    chainIdPatch: number, // TODO remove once ACLs are fixed
-  ): Promise<Response> {
-    return this.multipartRequest(
-      'POST',
-      `${this.env.backend}/${storageKey}?chain_id=${chainIdPatch}`,
-      entries,
-    );
+  private async create(storageKey: string, entries: readonly MultipartEntry[]): Promise<Response> {
+    return this.multipartRequest('POST', `${this.env.backend}/${storageKey}`, entries);
   }
 
   private async update(
     storageKey: string,
     authorization: Authorization,
     entries: readonly MultipartEntry[],
-    chainIdPatch: number, // TODO remove once ACLs are fixed
   ): Promise<Response> {
     return this.multipartRequest(
       'PUT',
-      `${this.env.backend}/${storageKey}?chain_id=${chainIdPatch}&challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
+      `${this.env.backend}/${storageKey}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
       entries,
     );
   }

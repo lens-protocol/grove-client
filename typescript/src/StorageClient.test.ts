@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { StorageClient } from './StorageClient';
 import { lensAccountOnly, walletOnly } from './builders';
 import { staging } from './environments';
-import type { Resource } from './types';
+import { FileUploadResponse, type Resource } from './types';
 import { never } from './utils';
 
 const signer = privateKeyToAccount(import.meta.env.PRIVATE_KEY);
@@ -103,7 +103,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     });
   });
 
-  describe.only('When testing file editing with Lens Accounts', () => {
+  describe('When testing file editing with Lens Accounts', () => {
     it(
       'Then it should allow editing according to the specified ACL',
       { timeout: 20000 },
@@ -112,12 +112,14 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const response = await client.uploadFile(file1, { acl });
 
         await response.waitUntilPersisted();
-        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBe(true);
+        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBeInstanceOf(
+          FileUploadResponse,
+        );
       },
     );
   });
 
-  describe.only('When testing file deletion with Lens Accounts', () => {
+  describe('When testing file deletion with Lens Accounts', () => {
     it(
       'Then it should allow deletion according to the specified ACL',
       { timeout: 20000 },
@@ -131,7 +133,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     );
   });
 
-  describe.only('When testing file editing with Wallet Addresses', () => {
+  describe('When testing file editing with Wallet Addresses', () => {
     it(
       'Then it should allow editing according to the specified ACL',
       { timeout: 20000 },
@@ -140,12 +142,14 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const response = await client.uploadFile(file1, { acl });
 
         await response.waitUntilPersisted();
-        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBe(true);
+        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBeInstanceOf(
+          FileUploadResponse,
+        );
       },
     );
   });
 
-  describe.only('When testing file deletion with Wallet Addresses', () => {
+  describe('When testing file deletion with Wallet Addresses', () => {
     it('Then it should allow deletion according to the specified ACL', async () => {
       const acl = walletOnly(import.meta.env.ADDRESS, 37111);
       const response = await client.uploadFile(file1, { acl });
