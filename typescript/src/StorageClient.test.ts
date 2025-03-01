@@ -137,7 +137,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
         const response = await client.uploadFile(file1, { acl });
 
-        await response.waitUntilPersisted();
+        await response.waitForPropagation();
         await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBeInstanceOf(
           FileUploadResponse,
         );
@@ -153,7 +153,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
         const response = await client.uploadFile(file1, { acl });
 
-        await response.waitUntilPersisted();
+        await response.waitForPropagation();
         await expect(client.delete(response.uri, signer)).resolves.toBe(true);
       },
     );
@@ -167,7 +167,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const acl = walletOnly(import.meta.env.ADDRESS, 37111);
         const response = await client.uploadFile(file1, { acl });
 
-        await response.waitUntilPersisted();
+        await response.waitForPropagation();
         await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBeInstanceOf(
           FileUploadResponse,
         );
@@ -180,7 +180,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const acl = walletOnly(import.meta.env.ADDRESS, 37111);
       const response = await client.uploadFile(file1, { acl });
 
-      await response.waitUntilPersisted();
+      await response.waitForPropagation();
       await expect(client.delete(response.uri, signer)).resolves.toBe(true);
     });
   });

@@ -113,16 +113,16 @@ abstract class UploadResponse {
     private readonly client: StorageClient,
   ) {}
   /**
-   * Wait until the resource is persisted in long term storage.
+   * Wait until the resource is fully propagated to the underlying storage infrastructure.
    *
-   * Edit and delete operations are only allowed after the resource is fully persisted.
+   * Edit and delete operations are only allowed after the resource if fully propagated.
    *
-   * @throws a {@link StorageClientError} if the persistence operation fails or times out
+   * @throws a {@link StorageClientError} if the operation fails or times out.
    */
-  async waitUntilPersisted(): Promise<void> {
+  async waitForPropagation(): Promise<void> {
     const startedAt = Date.now();
 
-    while (Date.now() - startedAt < this.client.env.persistanceTimeout) {
+    while (Date.now() - startedAt < this.client.env.propagationTimeout) {
       try {
         const { status } = await this.client.status(this.resource.storageKey);
 
@@ -139,7 +139,7 @@ abstract class UploadResponse {
             );
 
           default:
-            await delay(this.client.env.persistancePollingInterval);
+            await delay(this.client.env.propagationPollingInterval);
             break;
         }
       } catch (error) {
