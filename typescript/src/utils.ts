@@ -1,6 +1,6 @@
 import type { EnvironmentConfig } from './environments';
 import { InvariantError } from './errors';
-import type { AclTemplate, CreateIndexContent, Resource, Status } from './types';
+import type { AclConfig, CreateIndexContent, Resource, Status } from './types';
 
 /**
  * Asserts that the given condition is truthy
@@ -155,7 +155,7 @@ function computeMultipartSize(entries: readonly MultipartEntry[], boundary: stri
 }
 
 /**
- * Creates a multipart/form-data RequestInit object from a list of entries.
+ * Creates a multipart/form-data {@link RequestInit} object from a list of entries.
  *
  * @internal
  */
@@ -226,7 +226,7 @@ export function statusFrom(data: Record<string, unknown>): Status {
   };
 }
 
-function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
+function createAclTemplateContent(acl: AclConfig): Record<string, unknown> {
   switch (acl.template) {
     case 'generic_acl':
       return {
@@ -260,7 +260,7 @@ function createAclTemplateContent(acl: AclTemplate): Record<string, unknown> {
   }
 }
 
-function createAclEntry(template: AclTemplate): MultipartEntry {
+function createAclEntry(template: AclConfig): MultipartEntry {
   const name = 'lens-acl.json';
   const content = createAclTemplateContent(template);
 
@@ -314,7 +314,7 @@ export class MultipartEntriesBuilder {
     return this;
   }
 
-  withAclTemplate(template: AclTemplate): MultipartEntriesBuilder {
+  withAclTemplate(template: AclConfig): MultipartEntriesBuilder {
     this.entries.push(createAclEntry(template));
     return this;
   }

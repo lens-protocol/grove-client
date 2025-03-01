@@ -3,7 +3,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { StorageClient } from './StorageClient';
-import { lensAccountOnly, walletOnly } from './builders';
+import { immutable, lensAccountOnly, walletOnly } from './builders';
 import { staging } from './environments';
 import { FileUploadResponse, type Resource } from './types';
 import { never } from './utils';
@@ -26,21 +26,47 @@ async function assertFileExist(url: string) {
 describe(`Given an instance of the '${StorageClient.name}'`, () => {
   const client = StorageClient.create(staging);
 
-  describe('When testing single file uploads', () => {
-    it('Then it should create the expected response', async () => {
-      const response = await client.uploadFile(file1);
+  describe(`And an 'immutable' ACL configuration`, () => {
+    const acl = immutable(37111);
 
-      await assertFileExist(client.resolve(response.uri));
-      expect(response).toBeDefined();
+    describe('When testing single file uploads', () => {
+      it('Then it should create the expected response', async () => {
+        const response = await client.uploadFile(file1, { acl });
+
+        await assertFileExist(client.resolve(response.uri));
+        expect(response).toBeDefined();
+      });
+    });
+
+    describe('When testing an immutable JS Object upload', () => {
+      it('Then it should create the expected response', async () => {
+        const response = await client.uploadAsJson({ test: 'test' }, { acl });
+
+        await assertFileExist(client.resolve(response.uri));
+        expect(response).toBeDefined();
+      });
     });
   });
 
-  describe('When testing a JS Object upload', () => {
-    it('Then it should create the expected response', async () => {
-      const response = await client.uploadAsJson({ test: 'test' });
+  describe(`And any 'mutable' ACL configuration`, () => {
+    const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
 
-      await assertFileExist(client.resolve(response.uri));
-      expect(response).toBeDefined();
+    describe('When testing single file uploads', () => {
+      it('Then it should create the expected response', async () => {
+        const response = await client.uploadFile(file1, { acl });
+
+        await assertFileExist(client.resolve(response.uri));
+        expect(response).toBeDefined();
+      });
+    });
+
+    describe('When testing an immutable JS Object upload', () => {
+      it('Then it should create the expected response', async () => {
+        const response = await client.uploadAsJson({ test: 'test' }, { acl });
+
+        await assertFileExist(client.resolve(response.uri));
+        expect(response).toBeDefined();
+      });
     });
   });
 

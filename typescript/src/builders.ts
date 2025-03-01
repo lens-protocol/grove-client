@@ -1,9 +1,9 @@
 import type {
   EvmAddress,
-  GenericAclTemplate,
-  ImmutableAclTemplate,
-  LensAccountAclTemplate,
-  WalletAddressAclTemplate,
+  GenericAcl,
+  ImmutableAcl,
+  LensAccountAcl,
+  WalletAddressAcl,
 } from './types';
 
 /**
@@ -12,7 +12,7 @@ import type {
  * @param address - The Wallet Address that can edit/delete the resource.
  * @param chainId - The Chain ID that the resource is bound to. See supported chains.
  */
-export function walletOnly(address: EvmAddress, chainId: number): WalletAddressAclTemplate {
+export function walletOnly(address: EvmAddress, chainId: number): WalletAddressAcl {
   return { template: 'wallet_address', walletAddress: address, chainId };
 }
 
@@ -22,7 +22,7 @@ export function walletOnly(address: EvmAddress, chainId: number): WalletAddressA
  * @param account - The Lens Account that can edit/delete the resource.
  * @param chainId - The Lens Chain ID that the resource is bound to.
  */
-export function lensAccountOnly(account: EvmAddress, chainId: number): LensAccountAclTemplate {
+export function lensAccountOnly(account: EvmAddress, chainId: number): LensAccountAcl {
   return { template: 'lens_account', chainId, lensAccount: account };
 }
 
@@ -31,7 +31,7 @@ export function lensAccountOnly(account: EvmAddress, chainId: number): LensAccou
  *
  * It requires to specify the chain ID that the resource is bound to.
  */
-export function immutable(chainId: number): ImmutableAclTemplate {
+export function immutable(chainId: number): ImmutableAcl {
   return { template: 'immutable', chainId };
 }
 
@@ -46,7 +46,7 @@ export function genericAcl(chainId: number): GenericAclTemplateBuilder {
 }
 
 class GenericAclTemplateBuilder {
-  private acl: Partial<GenericAclTemplate> = { template: 'generic_acl' };
+  private acl: Partial<GenericAcl> = { template: 'generic_acl' };
 
   constructor(chainId: number) {
     this.acl.chainId = chainId;
@@ -71,14 +71,14 @@ class GenericAclTemplateBuilder {
     return this;
   }
 
-  build(): GenericAclTemplate {
+  build(): GenericAcl {
     if (!this.isValid(this.acl)) {
       throw new Error('GenericAclTemplate is missing required fields');
     }
-    return this.acl as GenericAclTemplate;
+    return this.acl as GenericAcl;
   }
 
-  private isValid(acl: Partial<GenericAclTemplate>): acl is GenericAclTemplate {
+  private isValid(acl: Partial<GenericAcl>): acl is GenericAcl {
     return !!(
       acl.template === 'generic_acl' &&
       acl.contractAddress &&

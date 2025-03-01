@@ -4,7 +4,7 @@ import { delay } from './utils';
 
 export type EvmAddress = `0x${string}`;
 
-export type GenericAclTemplate = {
+export type GenericAcl = {
   template: 'generic_acl';
   chainId: number;
   contractAddress: string;
@@ -13,28 +13,24 @@ export type GenericAclTemplate = {
   params: any[];
 };
 
-export type ImmutableAclTemplate = {
+export type ImmutableAcl = {
   template: 'immutable';
   chainId: number;
 };
 
-export type LensAccountAclTemplate = {
+export type LensAccountAcl = {
   template: 'lens_account';
   lensAccount: EvmAddress;
   chainId: number;
 };
 
-export type WalletAddressAclTemplate = {
+export type WalletAddressAcl = {
   template: 'wallet_address';
   walletAddress: EvmAddress;
   chainId: number;
 };
 
-export type AclTemplate =
-  | GenericAclTemplate
-  | ImmutableAclTemplate
-  | LensAccountAclTemplate
-  | WalletAddressAclTemplate;
+export type AclConfig = GenericAcl | ImmutableAcl | LensAccountAcl | WalletAddressAcl;
 
 /**
  * The marker used to identify the address of the signer attempting
@@ -48,11 +44,11 @@ export interface Signer {
 
 export type AccessOptions = {
   /**
-   * The ACL template to use for the resource.
+   * The ACL configuration to use for the resource.
    *
-   * @defaultValue {@link ImmutableAclTemplate} bound to the Lens Chain ID
+   * @defaultValue {@link ImmutableAcl} bound to the Lens Chain ID
    */
-  acl?: AclTemplate;
+  acl?: AclConfig;
 };
 
 export type UploadFileOptions = AccessOptions;

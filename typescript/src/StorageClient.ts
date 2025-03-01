@@ -4,9 +4,10 @@ import { type EnvironmentConfig, production } from './environments';
 import { AuthorizationError, StorageClientError } from './errors';
 import {
   type AccessOptions,
-  type AclTemplate,
+  type AclConfig,
   type EditFileOptions,
   FileUploadResponse,
+  type ImmutableAcl,
   type Resource,
   type Signer,
   type Status,
@@ -52,17 +53,12 @@ export class StorageClient {
    * @returns The {@link FileUploadResponse} to the uploaded file
    */
   async uploadFile(file: File, options: UploadFileOptions = {}): Promise<FileUploadResponse> {
-    const [resource] = await this.allocateStorage(1);
     const acl = this.resolveAcl(options);
-    const builder = MultipartEntriesBuilder.from([resource]).withFile(file).withAclTemplate(acl);
 
-    const entries = builder.build();
-
-    const response = await this.create(resource.storageKey, entries);
-
-    if (!response.ok) {
-      throw await StorageClientError.fromResponse(response);
-    }
+    const resource =
+      acl.template === 'immutable'
+        ? await this.uploadImmutableFile(file, acl)
+        : await this.uploadMutableFile(file, acl);
 
     return new FileUploadResponse(resource, this);
   }
@@ -244,17 +240,38 @@ export class StorageClient {
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
     }
-    const data = await response.json();
-    return data.map((data: Record<string, string>): Resource => {
-      const storageKey = data.storage_key ?? never('Missing storage key');
-      return {
-        storageKey,
-        // TODO use data.gateway_url once fixed by the API
-        // gatewayUrl: data.gateway_url ?? never('Missing gateway URL'),
-        gatewayUrl: this.resolve(storageKey),
-        uri: data.uri ?? never('Missing URI'),
-      };
+    return this.parseResourceFrom(response);
+  }
+
+  private async uploadMutableFile(file: File, acl: AclConfig): Promise<Resource> {
+    const [resource] = await this.allocateStorage(1);
+    const builder = MultipartEntriesBuilder.from([resource]).withFile(file).withAclTemplate(acl);
+
+    const entries = builder.build();
+
+    const response = await this.create(resource.storageKey, entries);
+
+    if (!response.ok) {
+      throw await StorageClientError.fromResponse(response);
+    }
+    return resource;
+  }
+
+  private async uploadImmutableFile(file: File, { chainId }: ImmutableAcl): Promise<Resource> {
+    const response = await fetch(`${this.env.backend}?chain_id=${chainId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.type,
+        'Content-Length': file.size.toString(),
+      },
+      body: file,
     });
+
+    if (!response.ok) {
+      throw await StorageClientError.fromResponse(response);
+    }
+    const [resource] = await this.parseResourceFrom(response);
+    return resource;
   }
 
   private async create(storageKey: string, entries: readonly MultipartEntry[]): Promise<Response> {
@@ -281,7 +298,23 @@ export class StorageClient {
     return fetch(url, await createMultipartRequestInit(method, entries));
   }
 
-  private resolveAcl<T extends AccessOptions>(options: T): AclTemplate {
+  private resolveAcl<T extends AccessOptions>(options: T): AclConfig {
     return options.acl ?? immutable(this.env.defaultChainId);
   }
+
+  private parseResourceFrom = async (response: Response): Promise<[Resource, ...Resource[]]> => {
+    const list = await response.json();
+
+    return list.map((data: Record<string, string>) => {
+      const storageKey =
+        data.storage_key ?? never(`Missing 'storage_key' in response: ${JSON.stringify(data)}`);
+      return {
+        storageKey,
+        // TODO use data.gateway_url once fixed by the API
+        // gatewayUrl: data.gateway_url ?? never('Missing gateway URL'),
+        gatewayUrl: this.resolve(storageKey),
+        uri: data.uri ?? never(`Missing 'uri' in response: ${JSON.stringify(data)}`),
+      };
+    }) as [Resource, ...Resource[]];
+  };
 }
