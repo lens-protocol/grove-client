@@ -1,7 +1,7 @@
 {
   "name": "@lens-chain/storage-client",
   "version": "0.0.2",
-  "description": "The easiest way to store data on Lens Storage Nodes.",
+  "description": "The easiest way to store data on Lens Grove.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
