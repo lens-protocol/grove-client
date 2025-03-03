@@ -5,6 +5,7 @@ import { AuthorizationError, StorageClientError } from './errors';
 import {
   type AccessOptions,
   type AclConfig,
+  type DeleteResponse,
   type EditFileOptions,
   FileUploadResponse,
   type ImmutableAcl,
@@ -142,9 +143,9 @@ export class StorageClient {
    * @throws a {@link AuthorizationError} if not authorized to delete the resource
    * @param storageKeyOrUri - The `lens://…` URI or storage key
    * @param signer - The signer to use for the deletion
-   * @returns Whether the deletion was successful or not
+   * @returns The deletion result.
    */
-  async delete(storageKeyOrUri: string, signer: Signer): Promise<boolean> {
+  async delete(storageKeyOrUri: string, signer: Signer): Promise<DeleteResponse> {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const authorization = await this.authorization.authorize('delete', storageKey, signer);
 
@@ -154,7 +155,9 @@ export class StorageClient {
         method: 'DELETE',
       },
     );
-    return response.ok;
+    return {
+      success: response.ok,
+    };
   }
 
   /**

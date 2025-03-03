@@ -175,6 +175,13 @@ export class FileUploadResponse extends UploadResponse {
   }
 }
 
+export type DeleteResponse = {
+  /**
+   * Whether the deletion was successful.
+   */
+  success: boolean;
+};
+
 /**
  * @internal
  */

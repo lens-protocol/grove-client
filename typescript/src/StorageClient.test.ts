@@ -152,9 +152,9 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       async () => {
         const acl = lensAccountOnly(import.meta.env.ACCOUNT, 37111);
         const response = await client.uploadFile(file1, { acl });
-
         await response.waitForPropagation();
-        await expect(client.delete(response.uri, signer)).resolves.toBe(true);
+
+        await expect(client.delete(response.uri, signer)).resolves.toHaveProperty('success', true);
       },
     );
   });
@@ -181,7 +181,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const response = await client.uploadFile(file1, { acl });
 
       await response.waitForPropagation();
-      await expect(client.delete(response.uri, signer)).resolves.toBe(true);
+      await expect(client.delete(response.uri, signer)).resolves.toHaveProperty('success', true);
     });
   });
 
