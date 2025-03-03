@@ -1,5 +1,11 @@
 # @lens-chain/storage-client
 
+## 1.0.1
+
+### Patch Changes
+
+- b26eb1e: fix: optional ACL signature
+
 ## 1.0.0
 
 ### Major Changes
