@@ -191,7 +191,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     });
 
     it('Then it should fallback to FormData uploads since ReadableStream is not supported', async () => {
-      const response = await client.uploadFile(file1);
+      const response = await client.uploadFile(file1, { acl: immutable(37111) });
 
       await assertFileExist(client.resolve(response.uri));
       expect(response).toBeDefined();

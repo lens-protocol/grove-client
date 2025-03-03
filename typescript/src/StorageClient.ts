@@ -53,6 +53,12 @@ export class StorageClient {
    * @param options - Any additional options for the upload
    * @returns The {@link FileUploadResponse} to the uploaded file
    */
+  async uploadFile(file: File, options: UploadFileOptions): Promise<FileUploadResponse>;
+  /**
+   *
+   * @deprecated use `uploadFile(file: File, options: UploadFileOptions): Promise<FileUploadResponse>` instead
+   */
+  async uploadFile(file: File, options?: UploadFileOptions): Promise<FileUploadResponse>;
   async uploadFile(file: File, options: UploadFileOptions = {}): Promise<FileUploadResponse> {
     const acl = this.resolveAcl(options);
 
@@ -79,6 +85,11 @@ export class StorageClient {
    * @param options - Upload options including the ACL configuration
    * @returns The {@link FileUploadResponse} to the uploaded JSON
    */
+  async uploadAsJson(json: unknown, options?: UploadJsonOptions): Promise<FileUploadResponse>;
+  /**
+   * @deprecated use `uploadAsJson(json: unknown, options: UploadJsonOptions): Promise<FileUploadResponse>` instead
+   */
+  async uploadAsJson(json: unknown, options?: UploadJsonOptions): Promise<FileUploadResponse>;
   async uploadAsJson(json: unknown, options: UploadJsonOptions = {}): Promise<FileUploadResponse> {
     const file = new File([JSON.stringify(json)], options.name ?? 'data.json', {
       type: 'application/json',
@@ -94,6 +105,17 @@ export class StorageClient {
    * @param options - Upload options including the ACL configuration
    * @returns The {@link UploadFolderResponse} to the uploaded folder
    */
+  async uploadFolder(
+    files: FileList | File[],
+    options: UploadFolderOptions,
+  ): Promise<UploadFolderResponse>;
+  /**
+   * @deprecated use `uploadFolder(files: FileList | File[], options: UploadFolderOptions): Promise<UploadFolderResponse>` instead
+   */
+  async uploadFolder(
+    files: FileList | File[],
+    options?: UploadFolderOptions,
+  ): Promise<UploadFolderResponse>;
   async uploadFolder(
     files: FileList | File[],
     options: UploadFolderOptions = {},
@@ -175,7 +197,7 @@ export class StorageClient {
     storageKeyOrUri: string,
     json: unknown,
     signer: Signer,
-    options: UploadJsonOptions = {},
+    options: UploadJsonOptions,
   ): Promise<FileUploadResponse> {
     const file = new File([JSON.stringify(json)], options.name ?? 'data.json', {
       type: 'application/json',
@@ -193,6 +215,21 @@ export class StorageClient {
    * @param signer - The signer to use for the edit
    * @param options - Upload options including the ACL configuration
    */
+  async editFile(
+    storageKeyOrUri: string,
+    newFile: File,
+    signer: Signer,
+    options: EditFileOptions,
+  ): Promise<FileUploadResponse>;
+  /**
+   * @deprecated use `editFile(storageKeyOrUri: string, newFile: File, signer: Signer, options: EditFileOptions): Promise<FileUploadResponse>` instead.
+   */
+  async editFile(
+    storageKeyOrUri: string,
+    newFile: File,
+    signer: Signer,
+    options?: EditFileOptions,
+  ): Promise<FileUploadResponse>;
   async editFile(
     storageKeyOrUri: string,
     newFile: File,
