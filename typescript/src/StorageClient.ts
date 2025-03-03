@@ -85,7 +85,7 @@ export class StorageClient {
    * @param options - Upload options including the ACL configuration
    * @returns The {@link FileUploadResponse} to the uploaded JSON
    */
-  async uploadAsJson(json: unknown, options?: UploadJsonOptions): Promise<FileUploadResponse>;
+  async uploadAsJson(json: unknown, options: UploadJsonOptions): Promise<FileUploadResponse>;
   /**
    * @deprecated use `uploadAsJson(json: unknown, options: UploadJsonOptions): Promise<FileUploadResponse>` instead
    */
