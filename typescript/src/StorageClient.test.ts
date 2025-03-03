@@ -38,7 +38,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       });
     });
 
-    describe('When testing an immutable JS Object upload', () => {
+    describe('When testing a JS Object upload', () => {
       it('Then it should create the expected response', async () => {
         const response = await client.uploadAsJson({ test: 'test' }, { acl });
 
@@ -60,7 +60,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       });
     });
 
-    describe('When testing an immutable JS Object upload', () => {
+    describe('When testing a JS Object upload', () => {
       it('Then it should create the expected response', async () => {
         const response = await client.uploadAsJson({ test: 'test' }, { acl });
 
