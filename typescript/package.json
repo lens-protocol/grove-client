@@ -1,14 +1,21 @@
 {
   "name": "@lens-chain/storage-client",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "The easiest way to store data on Lens Grove.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "sideEffects": false,
-  "files": ["dist"],
-  "keywords": ["lens", "chain", "storage", "node"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "lens",
+    "chain",
+    "storage",
+    "node"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -17,8 +24,12 @@
   },
   "typesVersions": {
     "*": {
-      "import": ["./dist/index.d.ts"],
-      "require": ["./dist/index.d.cts"]
+      "import": [
+        "./dist/index.d.ts"
+      ],
+      "require": [
+        "./dist/index.d.cts"
+      ]
     }
   },
   "scripts": {

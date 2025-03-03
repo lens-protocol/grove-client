@@ -1,16 +1,22 @@
 # @lens-chain/storage-client
 
+## 1.0.2
+
+### Patch Changes
+
+- 56a5676: **fix**: mandatory `options` in `StorageClient#uplaodAsJson` signature.
+
 ## 1.0.1
 
 ### Patch Changes
 
-- b26eb1e: fix: optional ACL signature
+- b26eb1e: *fix*: optional ACL signature
 
 ## 1.0.0
 
 ### Major Changes
 
-- 37c9dad: feat: releasing client library for Grove
+- 37c9dad: **feat**: releasing client library for Grove
 
 ### Minor Changes
 
