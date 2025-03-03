@@ -45,10 +45,8 @@ export interface Signer {
 export type AccessOptions = {
   /**
    * The ACL configuration to use for the resource.
-   *
-   * @defaultValue {@link ImmutableAcl} bound to the Lens Chain ID
    */
-  acl?: AclConfig;
+  acl: AclConfig;
 };
 
 export type UploadFileOptions = AccessOptions;

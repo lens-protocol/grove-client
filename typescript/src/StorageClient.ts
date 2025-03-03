@@ -3,7 +3,6 @@ import { immutable } from './builders';
 import { type EnvironmentConfig, production } from './environments';
 import { AuthorizationError, StorageClientError } from './errors';
 import {
-  type AccessOptions,
   type AclConfig,
   type DeleteResponse,
   type EditFileOptions,
@@ -59,9 +58,10 @@ export class StorageClient {
    * @deprecated use `uploadFile(file: File, options: UploadFileOptions): Promise<FileUploadResponse>` instead
    */
   async uploadFile(file: File, options?: UploadFileOptions): Promise<FileUploadResponse>;
-  async uploadFile(file: File, options: UploadFileOptions = {}): Promise<FileUploadResponse> {
-    const acl = this.resolveAcl(options);
-
+  async uploadFile(
+    file: File,
+    { acl }: UploadFileOptions = { acl: immutable(this.env.defaultChainId) },
+  ): Promise<FileUploadResponse> {
     const resource =
       acl.template === 'immutable'
         ? await this.uploadImmutableFile(file, acl)
@@ -90,7 +90,10 @@ export class StorageClient {
    * @deprecated use `uploadAsJson(json: unknown, options: UploadJsonOptions): Promise<FileUploadResponse>` instead
    */
   async uploadAsJson(json: unknown, options?: UploadJsonOptions): Promise<FileUploadResponse>;
-  async uploadAsJson(json: unknown, options: UploadJsonOptions = {}): Promise<FileUploadResponse> {
+  async uploadAsJson(
+    json: unknown,
+    options: UploadJsonOptions = { acl: immutable(this.env.defaultChainId) },
+  ): Promise<FileUploadResponse> {
     const file = new File([JSON.stringify(json)], options.name ?? 'data.json', {
       type: 'application/json',
     });
@@ -118,7 +121,7 @@ export class StorageClient {
   ): Promise<UploadFolderResponse>;
   async uploadFolder(
     files: FileList | File[],
-    options: UploadFolderOptions = {},
+    options: UploadFolderOptions = { acl: immutable(this.env.defaultChainId) },
   ): Promise<UploadFolderResponse> {
     const needsIndex = 'index' in options && !!options.index;
     const [folderResource, ...fileResources] = await this.allocateStorage(
@@ -131,8 +134,7 @@ export class StorageClient {
       builder.withIndexFile(options.index);
     }
 
-    const acl = this.resolveAcl(options);
-    builder.withAclTemplate(acl);
+    builder.withAclTemplate(options.acl);
 
     const entries = builder.build();
     const response = await this.create(folderResource.storageKey, entries);
@@ -234,14 +236,15 @@ export class StorageClient {
     storageKeyOrUri: string,
     newFile: File,
     signer: Signer,
-    options: EditFileOptions = {},
+    options: EditFileOptions = { acl: immutable(this.env.defaultChainId) },
   ): Promise<FileUploadResponse> {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const authorization = await this.authorization.authorize('edit', storageKey, signer);
 
-    const acl = this.resolveAcl(options);
     const resource = resourceFrom(storageKey, this.env);
-    const builder = MultipartEntriesBuilder.from([resource]).withFile(newFile).withAclTemplate(acl);
+    const builder = MultipartEntriesBuilder.from([resource])
+      .withFile(newFile)
+      .withAclTemplate(options.acl);
 
     const entries = builder.build();
     const response = await this.update(storageKey, authorization, entries);
@@ -336,10 +339,6 @@ export class StorageClient {
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
     return fetch(url, await createMultipartRequestInit(method, entries));
-  }
-
-  private resolveAcl<T extends AccessOptions>(options: T): AclConfig {
-    return options.acl ?? immutable(this.env.defaultChainId);
   }
 
   private parseResourceFrom = async (response: Response): Promise<[Resource, ...Resource[]]> => {

@@ -82,6 +82,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it('Then it should support default directory listing', async () => {
       const response = await client.uploadFolder(files, {
         index: true,
+        acl: immutable(37111),
       });
 
       const url = client.resolve(response.folder.uri);
@@ -95,7 +96,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     it('Then it should support using an arbitrary index file', async () => {
       const index = new File(['[]'], 'index.json', { type: 'text/plain' });
 
-      const response = await client.uploadFolder(files, { index });
+      const response = await client.uploadFolder(files, { index, acl: immutable(37111) });
 
       const url = client.resolve(response.folder.uri);
       const res = await fetch(url);
@@ -107,6 +108,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const indexFactory = (resources: Resource[]) => resources.map((r) => r.uri);
       const response = await client.uploadFolder(files, {
         index: indexFactory,
+        acl: immutable(37111),
       });
 
       const url = client.resolve(response.folder.uri);
@@ -120,7 +122,7 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const index = new File([JSON.stringify(content)], 'index.json', {
         type: 'application/json',
       });
-      const response = await client.uploadFolder(files, { index });
+      const response = await client.uploadFolder(files, { index, acl: immutable(37111) });
 
       const url = client.resolve(response.folder.uri);
       const res = await fetch(url);
