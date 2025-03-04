@@ -1,5 +1,11 @@
 # @lens-chain/storage-client
 
+## 1.0.3
+
+### Patch Changes
+
+- 9984087: **fix**: removes internal types from piublished typedef.
+
 ## 1.0.2
 
 ### Patch Changes
@@ -10,7 +16,7 @@
 
 ### Patch Changes
 
-- b26eb1e: *fix*: optional ACL signature
+- b26eb1e: _fix_: optional ACL signature
 
 ## 1.0.0
 
