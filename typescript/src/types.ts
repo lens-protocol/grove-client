@@ -102,9 +102,6 @@ export type UploadFolderResponse = {
   folder: Resource;
 };
 
-/**
- * @internal
- */
 abstract class UploadResponse {
   constructor(
     private readonly resource: Resource,
