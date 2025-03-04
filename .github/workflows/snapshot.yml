@@ -4,9 +4,6 @@ on:
   push:
     branches: [main]
 
-defaults:
-  run:
-    working-directory: ./typescript
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -26,21 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: "./typescript/.nvmrc"
-          cache: "pnpm"
-          cache-dependency-path: "./typescript/pnpm-lock.yaml"
-
-      - name: Install Dependencies
-        shell: bash
-        run: pnpm install --frozen-lockfile
+      - name: Setup Repository
+        uses: ./.github/actions/setup
 
       - name: Configure NPM Auth Token
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NODE_AUTH_TOKEN }}" >> ~/.npmrc
