@@ -15,7 +15,7 @@ export type EnvironmentConfig = {
 export const production: EnvironmentConfig = {
   name: 'production',
   backend: 'https://api.grove.storage',
-  defaultChainId: 37111,
+  defaultChainId: 232,
   propagationTimeout: 10000,
   propagationPollingInterval: 500,
 };

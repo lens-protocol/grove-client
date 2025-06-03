@@ -1,5 +1,11 @@
 # @lens-chain/storage-client
 
+## 1.0.4
+
+### Patch Changes
+
+- 73826c6: **feat:** change the default chainId for the prod env
+
 ## 1.0.3
 
 ### Patch Changes
