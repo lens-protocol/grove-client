@@ -85,20 +85,35 @@ function createMultipartStream(entries: readonly MultipartEntry[]): MultipartFor
   };
 }
 
-function detectStreamSupport()  {
-  let duplexAccessed = false;
+async function detectStreamSupport() {
+  try {
+    let duplexAccessed = false;
+    const hasContentType = new Request('https://', {
+      body: new ReadableStream(),
+      method: 'POST',
+      // @ts-ignore
+      get duplex() {
+        duplexAccessed = true;
+        return 'half';
+      },
+    }).headers.has('Content-Type');
 
-  const hasContentType = new Request('data:text/plain;charset=utf-8,42', {
-    body: new ReadableStream(),
-    method: 'POST',
-    // @ts-ignore
-    get duplex() {
-      duplexAccessed = true;
-      return 'half';
-    },
-  }).headers.has('Content-Type');
+    // If fails to handle fetch(Request), it's likely not a native implementation of
+    // Fetch API, so it's not supported.
+    const res = await fetch(
+      new Request('data:text/plain;charset=utf-8,42', {
+        method: 'POST',
+        body: new ReadableStream(),
+        // @ts-ignore
+        duplex: 'half',
+      }),
+    );
+    const body = await res.text();
 
-  return duplexAccessed && !hasContentType;
+    return duplexAccessed && !hasContentType && body === '\x00';
+  } catch (error) {
+    return false;
+  }
 }
 
 function createFormData(entries: readonly MultipartEntry[]): FormData {
@@ -149,7 +164,7 @@ export async function createMultipartRequestInit(
   method: 'POST' | 'PUT',
   entries: readonly MultipartEntry[],
 ): Promise<RequestInit> {
-  if (detectStreamSupport()) {
+  if (await detectStreamSupport()) {
     const { stream, boundary } = createMultipartStream(entries);
 
     return {
