@@ -1,6 +1,5 @@
-import nodeFetch from 'node-fetch';
 import { privateKeyToAccount } from 'viem/accounts';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { StorageClient } from './StorageClient';
 import { immutable, lensAccountOnly, walletOnly } from './builders';
@@ -184,19 +183,6 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
 
       await response.waitForPropagation();
       await expect(client.delete(response.uri, signer)).resolves.toHaveProperty('success', true);
-    });
-  });
-
-  describe.skip(`When running in environments with custom 'fetch' based on 'node-fetch'`, () => {
-    beforeAll(() => {
-      vi.stubGlobal('fetch', nodeFetch);
-    });
-
-    it('Then it should fallback to FormData uploads since ReadableStream is not supported', async () => {
-      const response = await client.uploadFile(file1, { acl: immutable(37111) });
-
-      await assertFileExist(client.resolve(response.uri));
-      expect(response).toBeDefined();
     });
   });
 });

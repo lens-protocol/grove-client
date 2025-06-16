@@ -1,3 +1,5 @@
+/// <reference types="@vitest/browser/providers/webdriverio" />
+
 import 'vitest';
 
 declare module 'vitest' {

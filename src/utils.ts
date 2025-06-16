@@ -85,32 +85,35 @@ function createMultipartStream(entries: readonly MultipartEntry[]): MultipartFor
   };
 }
 
-async function detectStreamSupport() {
+async function detectStreamSupport(): Promise<boolean> {
+  let duplexAccessed = false;
+
+  const testStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array([0])); // Minimal stream chunk
+      controller.close();
+    },
+  });
+
+  const request = new Request('data:text/plain;charset=utf-8,42', {
+    body: testStream,
+    method: 'POST',
+    // @ts-ignore
+    get duplex() {
+      duplexAccessed = true;
+      return 'half';
+    },
+  });
+
   try {
-    let duplexAccessed = false;
-    const hasContentType = new Request('https://', {
-      body: new ReadableStream(),
-      method: 'POST',
-      // @ts-ignore
-      get duplex() {
-        duplexAccessed = true;
-        return 'half';
-      },
-    }).headers.has('Content-Type');
+    const hasContentType = request.headers.has('Content-Type');
 
     // If fails to handle fetch(Request), it's likely not a native implementation of
     // Fetch API, so it's not supported.
-    const res = await fetch(
-      new Request('data:text/plain;charset=utf-8,42', {
-        method: 'POST',
-        body: new ReadableStream(),
-        // @ts-ignore
-        duplex: 'half',
-      }),
-    );
-    const body = await res.text();
+    await fetch(request.clone());
+    const body = await request.text();
 
-    return duplexAccessed && !hasContentType && body === '\x00';
+    return duplexAccessed && !hasContentType && body === '\x00'; // 0 byte as character
   } catch (error) {
     return false;
   }
