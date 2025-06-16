@@ -1,5 +1,11 @@
 # @lens-chain/storage-client
 
+## 1.0.5
+
+### Patch Changes
+
+- 1c05f57: **fix:** stream detection support on Safari
+
 ## 1.0.4
 
 ### Patch Changes
