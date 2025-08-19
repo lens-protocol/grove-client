@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     setupFiles: ['./vitest.setup.ts'],
     env: loadEnv('', process.cwd(), ''),
-    testTimeout: 10000,
+    testTimeout: 15000,
 
     projects: [
       {

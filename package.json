@@ -7,8 +7,16 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "sideEffects": false,
-  "files": ["dist"],
-  "keywords": ["lens", "grove", "chain", "storage", "node"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "lens",
+    "grove",
+    "chain",
+    "storage",
+    "node"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -17,8 +25,12 @@
   },
   "typesVersions": {
     "*": {
-      "import": ["./dist/index.d.ts"],
-      "require": ["./dist/index.d.ts"]
+      "import": [
+        "./dist/index.d.ts"
+      ],
+      "require": [
+        "./dist/index.d.ts"
+      ]
     }
   },
   "scripts": {
@@ -30,7 +42,7 @@
     "test:browser": "vitest --project browser"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.6",
     "@changesets/cli": "^2.27.9",
     "@types/node": "^22.9.0",
     "@vitest/browser": "^3.2.3",
