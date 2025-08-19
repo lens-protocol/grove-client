@@ -1,4 +1,7 @@
-import { type Authorization, AuthorizationService } from './AuthorizationService';
+import {
+  type Authorization,
+  AuthorizationService,
+} from './AuthorizationService';
 import { immutable } from './builders';
 import { type EnvironmentConfig, production } from './environments';
 import { AuthorizationError, StorageClientError } from './errors';
@@ -17,11 +20,11 @@ import {
   type UploadJsonOptions,
 } from './types';
 import {
-  MultipartEntriesBuilder,
-  type MultipartEntry,
   createMultipartRequestInit,
   extractStorageKey,
   invariant,
+  MultipartEntriesBuilder,
+  type MultipartEntry,
   never,
   resourceFrom,
   statusFrom,
@@ -52,12 +55,18 @@ export class StorageClient {
    * @param options - Any additional options for the upload
    * @returns The {@link FileUploadResponse} to the uploaded file
    */
-  async uploadFile(file: File, options: UploadFileOptions): Promise<FileUploadResponse>;
+  async uploadFile(
+    file: File,
+    options: UploadFileOptions,
+  ): Promise<FileUploadResponse>;
   /**
    *
    * @deprecated use `uploadFile(file: File, options: UploadFileOptions): Promise<FileUploadResponse>` instead
    */
-  async uploadFile(file: File, options?: UploadFileOptions): Promise<FileUploadResponse>;
+  async uploadFile(
+    file: File,
+    options?: UploadFileOptions,
+  ): Promise<FileUploadResponse>;
   async uploadFile(
     file: File,
     { acl }: UploadFileOptions = { acl: immutable(this.env.defaultChainId) },
@@ -85,11 +94,17 @@ export class StorageClient {
    * @param options - Upload options including the ACL configuration
    * @returns The {@link FileUploadResponse} to the uploaded JSON
    */
-  async uploadAsJson(json: unknown, options: UploadJsonOptions): Promise<FileUploadResponse>;
+  async uploadAsJson(
+    json: unknown,
+    options: UploadJsonOptions,
+  ): Promise<FileUploadResponse>;
   /**
    * @deprecated use `uploadAsJson(json: unknown, options: UploadJsonOptions): Promise<FileUploadResponse>` instead
    */
-  async uploadAsJson(json: unknown, options?: UploadJsonOptions): Promise<FileUploadResponse>;
+  async uploadAsJson(
+    json: unknown,
+    options?: UploadJsonOptions,
+  ): Promise<FileUploadResponse>;
   async uploadAsJson(
     json: unknown,
     options: UploadJsonOptions = { acl: immutable(this.env.defaultChainId) },
@@ -128,7 +143,9 @@ export class StorageClient {
       files.length + (needsIndex ? 2 : 1),
     );
 
-    const builder = MultipartEntriesBuilder.from(fileResources).withFiles(Array.from(files));
+    const builder = MultipartEntriesBuilder.from(fileResources).withFiles(
+      Array.from(files),
+    );
 
     if (options.index) {
       builder.withIndexFile(options.index);
@@ -137,7 +154,7 @@ export class StorageClient {
     builder.withAclTemplate(options.acl);
 
     const entries = builder.build();
-    const response = await this.create(folderResource.storageKey, entries);
+    const response = await this.upload(folderResource.storageKey, entries);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
@@ -169,9 +186,16 @@ export class StorageClient {
    * @param signer - The signer to use for the deletion
    * @returns The deletion result.
    */
-  async delete(storageKeyOrUri: string, signer: Signer): Promise<DeleteResponse> {
+  async delete(
+    storageKeyOrUri: string,
+    signer: Signer,
+  ): Promise<DeleteResponse> {
     const storageKey = extractStorageKey(storageKeyOrUri);
-    const authorization = await this.authorization.authorize('delete', storageKey, signer);
+    const authorization = await this.authorization.authorize(
+      'delete',
+      storageKey,
+      signer,
+    );
 
     const response = await fetch(
       `${this.env.backend}/${storageKey}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
@@ -239,7 +263,11 @@ export class StorageClient {
     options: EditFileOptions = { acl: immutable(this.env.defaultChainId) },
   ): Promise<FileUploadResponse> {
     const storageKey = extractStorageKey(storageKeyOrUri);
-    const authorization = await this.authorization.authorize('edit', storageKey, signer);
+    const authorization = await this.authorization.authorize(
+      'edit',
+      storageKey,
+      signer,
+    );
 
     const resource = resourceFrom(storageKey, this.env);
     const builder = MultipartEntriesBuilder.from([resource])
@@ -269,16 +297,21 @@ export class StorageClient {
     try {
       const data = await response.json();
       return statusFrom(data);
-    } catch (error) {
+    } catch (_) {
       throw await StorageClientError.fromResponse(response);
     }
   }
 
-  private async allocateStorage(amount: number): Promise<[Resource, ...Resource[]]> {
+  private async allocateStorage(
+    amount: number,
+  ): Promise<[Resource, ...Resource[]]> {
     invariant(amount > 0, 'Amount must be greater than 0');
-    const response = await fetch(`${this.env.backend}/link/new?amount=${amount}`, {
-      method: 'POST',
-    });
+    const response = await fetch(
+      `${this.env.backend}/link/new?amount=${amount}`,
+      {
+        method: 'POST',
+      },
+    );
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
@@ -286,13 +319,18 @@ export class StorageClient {
     return this.parseResourceFrom(response);
   }
 
-  private async uploadMutableFile(file: File, acl: AclConfig): Promise<Resource> {
+  private async uploadMutableFile(
+    file: File,
+    acl: AclConfig,
+  ): Promise<Resource> {
     const [resource] = await this.allocateStorage(1);
-    const builder = MultipartEntriesBuilder.from([resource]).withFile(file).withAclTemplate(acl);
+    const builder = MultipartEntriesBuilder.from([resource])
+      .withFile(file)
+      .withAclTemplate(acl);
 
     const entries = builder.build();
 
-    const response = await this.create(resource.storageKey, entries);
+    const response = await this.upload(resource.storageKey, entries);
 
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
@@ -300,7 +338,10 @@ export class StorageClient {
     return resource;
   }
 
-  private async uploadImmutableFile(file: File, { chainId }: ImmutableAcl): Promise<Resource> {
+  private async uploadImmutableFile(
+    file: File,
+    { chainId }: ImmutableAcl,
+  ): Promise<Resource> {
     const response = await fetch(`${this.env.backend}?chain_id=${chainId}`, {
       method: 'POST',
       headers: {
@@ -317,8 +358,15 @@ export class StorageClient {
     return resource;
   }
 
-  private async create(storageKey: string, entries: readonly MultipartEntry[]): Promise<Response> {
-    return this.multipartRequest('POST', `${this.env.backend}/${storageKey}`, entries);
+  private async upload(
+    storageKey: string,
+    entries: readonly MultipartEntry[],
+  ): Promise<Response> {
+    return this.multipartRequest(
+      'POST',
+      `${this.env.backend}/${storageKey}`,
+      entries,
+    );
   }
 
   private async update(
@@ -341,18 +389,23 @@ export class StorageClient {
     return fetch(url, await createMultipartRequestInit(method, entries));
   }
 
-  private parseResourceFrom = async (response: Response): Promise<[Resource, ...Resource[]]> => {
+  private parseResourceFrom = async (
+    response: Response,
+  ): Promise<[Resource, ...Resource[]]> => {
     const list = await response.json();
 
     return list.map((data: Record<string, string>) => {
       const storageKey =
-        data.storage_key ?? never(`Missing 'storage_key' in response: ${JSON.stringify(data)}`);
+        data.storage_key ??
+        never(`Missing 'storage_key' in response: ${JSON.stringify(data)}`);
       return {
         storageKey,
         // TODO use data.gateway_url once fixed by the API
         // gatewayUrl: data.gateway_url ?? never('Missing gateway URL'),
         gatewayUrl: this.resolve(storageKey),
-        uri: data.uri ?? never(`Missing 'uri' in response: ${JSON.stringify(data)}`),
+        uri:
+          data.uri ??
+          never(`Missing 'uri' in response: ${JSON.stringify(data)}`),
       };
     }) as [Resource, ...Resource[]];
   };

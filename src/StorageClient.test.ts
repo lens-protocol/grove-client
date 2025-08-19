@@ -1,9 +1,8 @@
 import { privateKeyToAccount } from 'viem/accounts';
 import { describe, expect, it } from 'vitest';
-
-import { StorageClient } from './StorageClient';
 import { immutable, lensAccountOnly, walletOnly } from './builders';
 import { staging } from './environments';
+import { StorageClient } from './StorageClient';
 import { FileUploadResponse, type Resource } from './types';
 import { never } from './utils';
 
@@ -73,7 +72,9 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     const files = [file1, file2];
 
     it('Then it should create the expected resources', async () => {
-      const result = await client.uploadFolder(files, { acl: immutable(37111) });
+      const result = await client.uploadFolder(files, {
+        acl: immutable(37111),
+      });
 
       await assertFileExist(client.resolve(result.files[0]?.uri ?? never()));
     });
@@ -88,14 +89,21 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const res = await fetch(url);
       const json = await res.json();
       expect(json).toMatchObject({
-        files: expect.arrayContaining([expect.any(String), expect.any(String), expect.any(String)]),
+        files: expect.arrayContaining([
+          expect.any(String),
+          expect.any(String),
+          expect.any(String),
+        ]),
       });
     });
 
     it('Then it should support using an arbitrary index file', async () => {
       const index = new File(['[]'], 'index.json', { type: 'text/plain' });
 
-      const response = await client.uploadFolder(files, { index, acl: immutable(37111) });
+      const response = await client.uploadFolder(files, {
+        index,
+        acl: immutable(37111),
+      });
 
       const url = client.resolve(response.folder.uri);
       const res = await fetch(url);
@@ -104,7 +112,8 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
     });
 
     it('Then it should support an index file factory', async () => {
-      const indexFactory = (resources: Resource[]) => resources.map((r) => r.uri);
+      const indexFactory = (resources: Resource[]) =>
+        resources.map((r) => r.uri);
       const response = await client.uploadFolder(files, {
         index: indexFactory,
         acl: immutable(37111),
@@ -113,7 +122,9 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const url = client.resolve(response.folder.uri);
       const res = await fetch(url);
       const json = await res.json();
-      expect(json).toMatchObject(expect.arrayContaining([expect.stringContaining('lens://')]));
+      expect(json).toMatchObject(
+        expect.arrayContaining([expect.stringContaining('lens://')]),
+      );
     });
 
     it('Then it should allow to specify you own index file', async () => {
@@ -121,7 +132,10 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const index = new File([JSON.stringify(content)], 'index.json', {
         type: 'application/json',
       });
-      const response = await client.uploadFolder(files, { index, acl: immutable(37111) });
+      const response = await client.uploadFolder(files, {
+        index,
+        acl: immutable(37111),
+      });
 
       const url = client.resolve(response.folder.uri);
       const res = await fetch(url);
@@ -139,9 +153,9 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const response = await client.uploadFile(file1, { acl });
 
         await response.waitForPropagation();
-        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBeInstanceOf(
-          FileUploadResponse,
-        );
+        await expect(
+          client.editFile(response.uri, file2, signer, { acl }),
+        ).resolves.toBeInstanceOf(FileUploadResponse);
       },
     );
   });
@@ -155,7 +169,9 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const response = await client.uploadFile(file1, { acl });
         await response.waitForPropagation();
 
-        await expect(client.delete(response.uri, signer)).resolves.toHaveProperty('success', true);
+        await expect(
+          client.delete(response.uri, signer),
+        ).resolves.toHaveProperty('success', true);
       },
     );
   });
@@ -169,9 +185,9 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         const response = await client.uploadFile(file1, { acl });
 
         await response.waitForPropagation();
-        await expect(client.editFile(response.uri, file2, signer, { acl })).resolves.toBeInstanceOf(
-          FileUploadResponse,
-        );
+        await expect(
+          client.editFile(response.uri, file2, signer, { acl }),
+        ).resolves.toBeInstanceOf(FileUploadResponse);
       },
     );
   });
@@ -182,7 +198,10 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
       const response = await client.uploadFile(file1, { acl });
 
       await response.waitForPropagation();
-      await expect(client.delete(response.uri, signer)).resolves.toHaveProperty('success', true);
+      await expect(client.delete(response.uri, signer)).resolves.toHaveProperty(
+        'success',
+        true,
+      );
     });
   });
 });

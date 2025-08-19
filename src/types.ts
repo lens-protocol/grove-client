@@ -1,5 +1,5 @@
-import type { StorageClient } from './StorageClient';
 import { StorageClientError } from './errors';
+import type { StorageClient } from './StorageClient';
 import { delay } from './utils';
 
 export type EvmAddress = `0x${string}`;
@@ -30,7 +30,11 @@ export type WalletAddressAcl = {
   chainId: number;
 };
 
-export type AclConfig = GenericAcl | ImmutableAcl | LensAccountAcl | WalletAddressAcl;
+export type AclConfig =
+  | GenericAcl
+  | ImmutableAcl
+  | LensAccountAcl
+  | WalletAddressAcl;
 
 /**
  * The marker used to identify the address of the signer attempting
@@ -142,7 +146,9 @@ abstract class UploadResponse {
         throw StorageClientError.from(error);
       }
     }
-    throw StorageClientError.from(`Timeout waiting for ${this.resource.uri} to be persisted.`);
+    throw StorageClientError.from(
+      `Timeout waiting for ${this.resource.uri} to be persisted.`,
+    );
   }
 }
 

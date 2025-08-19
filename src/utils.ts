@@ -9,7 +9,10 @@ import type { AclConfig, CreateIndexContent, Resource, Status } from './types';
  * @param condition - Either truthy or falsy value
  * @param message - An error message
  */
-export function invariant(condition: unknown, message: string): asserts condition {
+export function invariant(
+  condition: unknown,
+  message: string,
+): asserts condition {
   if (!condition) {
     throw new InvariantError(message);
   }
@@ -45,7 +48,10 @@ export type MultipartFormDataStream = {
   stream: ReadableStream<Uint8Array>;
 };
 
-async function* multipartStream(entries: readonly MultipartEntry[], boundary: string) {
+async function* multipartStream(
+  entries: readonly MultipartEntry[],
+  boundary: string,
+) {
   for (const { name, file } of entries) {
     yield `--${boundary}\r\n`;
 
@@ -65,7 +71,9 @@ async function* multipartStream(entries: readonly MultipartEntry[], boundary: st
   yield `--${boundary}--\r\n`;
 }
 
-function createMultipartStream(entries: readonly MultipartEntry[]): MultipartFormDataStream {
+function createMultipartStream(
+  entries: readonly MultipartEntry[],
+): MultipartFormDataStream {
   const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
 
   return {
@@ -114,7 +122,7 @@ async function detectStreamSupport(): Promise<boolean> {
     const body = await request.text();
 
     return duplexAccessed && !hasContentType && body === '\x00'; // 0 byte as character
-  } catch (error) {
+  } catch (_) {
     return false;
   }
 }
@@ -129,7 +137,10 @@ function createFormData(entries: readonly MultipartEntry[]): FormData {
   return formData;
 }
 
-function computeMultipartSize(entries: readonly MultipartEntry[], boundary: string): number {
+function computeMultipartSize(
+  entries: readonly MultipartEntry[],
+  boundary: string,
+): number {
   let size = 0;
   const encoder = new TextEncoder();
 
@@ -211,7 +222,10 @@ export function extractStorageKey(storageKeyOrUri: string): string {
 /**
  * @internal
  */
-export function resourceFrom(storageKey: string, env: EnvironmentConfig): Resource {
+export function resourceFrom(
+  storageKey: string,
+  env: EnvironmentConfig,
+): Resource {
   return {
     storageKey,
     gatewayUrl: `${env.backend}/${storageKey}`,
@@ -276,7 +290,9 @@ function createAclEntry(template: AclConfig): MultipartEntry {
   };
 }
 
-function createDefaultIndexContent(files: readonly Resource[]): Record<string, unknown> {
+function createDefaultIndexContent(
+  files: readonly Resource[],
+): Record<string, unknown> {
   return {
     files: files.map((file) => file.storageKey),
   };
@@ -323,7 +339,9 @@ export class MultipartEntriesBuilder {
     return this;
   }
 
-  withIndexFile(index: CreateIndexContent | File | true): MultipartEntriesBuilder {
+  withIndexFile(
+    index: CreateIndexContent | File | true,
+  ): MultipartEntriesBuilder {
     const file =
       index instanceof File
         ? index
@@ -333,7 +351,10 @@ export class MultipartEntriesBuilder {
               : index.call(null, this.allocations.slice()), // shallow copy
           );
 
-    invariant(file.name === 'index.json', "Index file must be named 'index.json'");
+    invariant(
+      file.name === 'index.json',
+      "Index file must be named 'index.json'",
+    );
 
     return this.withFile(file);
   }

@@ -5,7 +5,7 @@ class BaseError extends Error {
 
       // biome-ignore lint/complexity/noThisInStatic: need this to create the correct error type
       return new this(message);
-    } catch (error) {
+    } catch (_) {
       // biome-ignore lint/complexity/noThisInStatic: need this to create the correct error type
       return new this(await response.text());
     }
