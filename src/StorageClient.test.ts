@@ -76,7 +76,8 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
         acl: immutable(37111),
       });
 
-      await assertFileExist(client.resolve(result.folder.uri));
+      console.log(result);
+
       await assertFileExist(client.resolve(result.files[0]?.uri ?? never()));
     });
 

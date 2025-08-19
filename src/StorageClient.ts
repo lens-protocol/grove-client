@@ -407,6 +407,8 @@ export class StorageClient {
       entries,
     );
 
+    console.log('upload', `${this.env.backend}/${storageKey}`);
+
     await this.waitUntilStatus(
       storageKey,
       ['done', 'available'],
