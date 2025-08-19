@@ -71,11 +71,12 @@ describe(`Given an instance of the '${StorageClient.name}'`, () => {
   describe('When testing folder uploads', () => {
     const files = [file1, file2];
 
-    it('Then it should create the expected resources', async () => {
+    it.only('Then it should create the expected resources', async () => {
       const result = await client.uploadFolder(files, {
         acl: immutable(37111),
       });
 
+      await assertFileExist(client.resolve(result.folder.uri));
       await assertFileExist(client.resolve(result.files[0]?.uri ?? never()));
     });
 

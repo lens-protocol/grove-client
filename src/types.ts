@@ -1,6 +1,4 @@
-import { StorageClientError } from './errors';
 import type { StorageClient } from './StorageClient';
-import { delay } from './utils';
 
 export type EvmAddress = `0x${string}`;
 
@@ -119,35 +117,10 @@ abstract class UploadResponse {
    * @throws a {@link StorageClientError} if the operation fails or times out.
    */
   async waitForPropagation(): Promise<void> {
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < this.client.env.propagationTimeout) {
-      try {
-        const { status } = await this.client.status(this.resource.storageKey);
-
-        switch (status) {
-          case 'done':
-            return;
-
-          case 'error_upload':
-          case 'error_edit':
-          case 'error_delete':
-          case 'unauthorized':
-            throw StorageClientError.from(
-              `The resource ${this.resource.storageKey} has returned a '${status}' status.`,
-            );
-
-          default:
-            await delay(this.client.env.propagationPollingInterval);
-            break;
-        }
-      } catch (error) {
-        console.log(error);
-        throw StorageClientError.from(error);
-      }
-    }
-    throw StorageClientError.from(
-      `Timeout waiting for ${this.resource.uri} to be persisted.`,
+    return this.client.waitUntilStatus(
+      this.resource.storageKey,
+      ['done'],
+      this.client.env.propagationTimeout,
     );
   }
 }
@@ -186,7 +159,22 @@ export type DeleteResponse = {
 /**
  * @internal
  */
-export type Status = {
+export type Status =
+  | 'available'
+  | 'dirty'
+  | 'done'
+  | 'error_delete'
+  | 'error_edit'
+  | 'error_upload'
+  | 'idle'
+  | 'new'
+  | 'pending'
+  | 'unauthorized';
+
+/**
+ * @internal
+ */
+export type StatusResponse = {
   /**
    * The storage key of the resource.
    */
@@ -194,15 +182,7 @@ export type Status = {
   /**
    * The current status.
    */
-  status:
-    | 'done'
-    | 'error_delete'
-    | 'error_edit'
-    | 'error_upload'
-    | 'idle'
-    | 'new'
-    | 'pending'
-    | 'unauthorized';
+  status: Status;
   /**
    * A percentage value between 0-100 indicating the progress of the resource's persistence.
    *

@@ -1,6 +1,12 @@
 import type { EnvironmentConfig } from './environments';
 import { InvariantError } from './errors';
-import type { AclConfig, CreateIndexContent, Resource, Status } from './types';
+import type {
+  AclConfig,
+  CreateIndexContent,
+  Resource,
+  Status,
+  StatusResponse,
+} from './types';
 
 /**
  * Asserts that the given condition is truthy
@@ -236,9 +242,11 @@ export function resourceFrom(
 /**
  * @internal
  */
-export function statusFrom(data: Record<string, unknown>): Status {
+export function statusResponseFrom(
+  data: Record<string, unknown>,
+): StatusResponse {
   return {
-    status: data.status as Status['status'],
+    status: data.status as Status,
     storageKey: data.storage_key as string,
     progress: data.progress as number,
   };

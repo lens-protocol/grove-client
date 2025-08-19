@@ -14,6 +14,7 @@ import {
   type Resource,
   type Signer,
   type Status,
+  type StatusResponse,
   type UploadFileOptions,
   type UploadFolderOptions,
   type UploadFolderResponse,
@@ -21,13 +22,14 @@ import {
 } from './types';
 import {
   createMultipartRequestInit,
+  delay,
   extractStorageKey,
   invariant,
   MultipartEntriesBuilder,
   type MultipartEntry,
   never,
   resourceFrom,
-  statusFrom,
+  statusResponseFrom,
 } from './utils';
 
 export class StorageClient {
@@ -287,7 +289,7 @@ export class StorageClient {
   /**
    * @internal
    */
-  async status(storageKeyOrUri: string): Promise<Status> {
+  async status(storageKeyOrUri: string): Promise<StatusResponse> {
     const storageKey = extractStorageKey(storageKeyOrUri);
     const response = await fetch(`${this.env.backend}/status/${storageKey}`);
 
@@ -296,10 +298,47 @@ export class StorageClient {
     }
     try {
       const data = await response.json();
-      return statusFrom(data);
+      return statusResponseFrom(data);
     } catch (_) {
       throw await StorageClientError.fromResponse(response);
     }
+  }
+
+  /**
+   * @internal
+   */
+  async waitUntilStatus(
+    storageKeyOrUri: string,
+    expectedStatuses: Status[],
+    timeout: number,
+  ): Promise<void> {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeout) {
+      const { status } = await this.status(storageKeyOrUri);
+
+      console.log(storageKeyOrUri, status);
+
+      // Handle common error states
+      switch (status) {
+        case 'error_upload':
+        case 'error_edit':
+        case 'error_delete':
+        case 'unauthorized':
+          throw StorageClientError.from(
+            `The resource ${storageKeyOrUri} has returned a '${status}' status.`,
+          );
+      }
+
+      if (expectedStatuses.includes(status)) {
+        return;
+      }
+
+      await delay(this.env.statusPollingInterval);
+    }
+    throw StorageClientError.from(
+      `Timeout waiting for resource ${storageKeyOrUri} to reach status: ${expectedStatuses.join(' or ')}.`,
+    );
   }
 
   private async allocateStorage(
@@ -362,11 +401,19 @@ export class StorageClient {
     storageKey: string,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    return this.multipartRequest(
+    const response = await this.multipartRequest(
       'POST',
       `${this.env.backend}/${storageKey}`,
       entries,
     );
+
+    await this.waitUntilStatus(
+      storageKey,
+      ['done', 'available'],
+      this.env.cachingTimeout,
+    );
+
+    return response;
   }
 
   private async update(
@@ -374,11 +421,19 @@ export class StorageClient {
     authorization: Authorization,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    return this.multipartRequest(
+    const response = await this.multipartRequest(
       'PUT',
       `${this.env.backend}/${storageKey}?challenge_cid=${authorization.challengeId}&secret_random=${authorization.secret}`,
       entries,
     );
+
+    await this.waitUntilStatus(
+      storageKey,
+      ['done'],
+      this.env.propagationTimeout,
+    );
+
+    return response;
   }
 
   private async multipartRequest(
