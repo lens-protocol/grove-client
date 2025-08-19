@@ -78,6 +78,12 @@ export class StorageClient {
         ? await this.uploadImmutableFile(file, acl)
         : await this.uploadMutableFile(file, acl);
 
+    await this.waitUntilStatus(
+      resource.storageKey,
+      ['done', 'available'],
+      this.env.cachingTimeout,
+    );
+
     return new FileUploadResponse(resource, this);
   }
 
@@ -140,9 +146,9 @@ export class StorageClient {
     files: FileList | File[],
     options: UploadFolderOptions = { acl: immutable(this.env.defaultChainId) },
   ): Promise<UploadFolderResponse> {
-    const needsIndex = 'index' in options && !!options.index;
+    const withIndexFile = 'index' in options && !!options.index;
     const [folderResource, ...fileResources] = await this.allocateStorage(
-      files.length + (needsIndex ? 2 : 1),
+      files.length + (withIndexFile ? 2 : 1),
     );
 
     const builder = MultipartEntriesBuilder.from(fileResources).withFiles(
@@ -161,6 +167,13 @@ export class StorageClient {
     if (!response.ok) {
       throw await StorageClientError.fromResponse(response);
     }
+
+    await this.waitUntilStatus(
+      // biome-ignore lint/style/noNonNullAssertion: we know the folder has at least one file
+      withIndexFile ? folderResource.storageKey : fileResources[0]!.storageKey,
+      ['done', 'available'],
+      this.env.cachingTimeout,
+    );
 
     return {
       folder: folderResource,
@@ -317,8 +330,6 @@ export class StorageClient {
     while (Date.now() - startedAt < timeout) {
       const { status } = await this.status(storageKeyOrUri);
 
-      console.log(storageKeyOrUri, status);
-
       // Handle common error states
       switch (status) {
         case 'error_upload':
@@ -401,21 +412,11 @@ export class StorageClient {
     storageKey: string,
     entries: readonly MultipartEntry[],
   ): Promise<Response> {
-    const response = await this.multipartRequest(
+    return this.multipartRequest(
       'POST',
       `${this.env.backend}/${storageKey}`,
       entries,
     );
-
-    console.log('upload', `${this.env.backend}/${storageKey}`);
-
-    await this.waitUntilStatus(
-      storageKey,
-      ['done', 'available'],
-      this.env.cachingTimeout,
-    );
-
-    return response;
   }
 
   private async update(
