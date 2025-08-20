@@ -1,5 +1,11 @@
 # @lens-chain/storage-client
 
+## 1.0.6
+
+### Patch Changes
+
+- 4dce33f: **feat**: support for new `available` status
+
 ## 1.0.5
 
 ### Patch Changes
